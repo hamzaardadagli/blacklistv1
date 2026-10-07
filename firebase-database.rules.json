@@ -1,0 +1,51 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "rooms": {
+      ".read": "auth != null",
+      ".indexOn": ["created"],
+
+      "$code": {
+        ".write": "auth != null && ((!data.exists() && newData.child('host').val() === auth.uid && newData.child('players').child(auth.uid).exists()) || (!newData.exists() && (data.child('players').child(auth.uid).exists() || data.child('created').val() < now - 43200000)))",
+        ".validate": "$code.matches(/^[A-Z0-9]{5}$/) && newData.hasChildren(['host', 'created', 'settings', 'players'])",
+
+        "host": { ".validate": "newData.isString()" },
+        "created": { ".validate": "newData.isNumber()" },
+        "settings": {
+          ".validate": "newData.hasChildren(['mode', 'duration', 'rounds', 'passLimit', 'diff']) && (newData.child('mode').val() === 'duo' || newData.child('mode').val() === 'team') && newData.child('duration').isNumber() && newData.child('rounds').isNumber() && newData.child('passLimit').isNumber()"
+        },
+        "teamNames": {
+          "$i": { ".validate": "newData.isString() && newData.val().length <= 18" }
+        },
+
+        "players": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "newData.hasChildren(['name', 'side'])",
+            "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 18" },
+            "side": { ".validate": "newData.val() === 0 || newData.val() === 1" },
+            "t": { ".validate": "newData.isNumber()" },
+            "on": { ".validate": "newData.isBoolean()" },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "game": {
+          ".write": "auth != null && data.parent().child('players').child(auth.uid).exists()"
+        },
+
+        "$other": { ".validate": false }
+      }
+    },
+
+    "logs": {
+      ".read": "auth != null",
+      "$gid": {
+        ".write": "auth != null && !data.exists()",
+        ".validate": "newData.hasChildren(['id', 'date', 'mode', 'names', 'scores', 'turns']) && newData.child('id').val() === $gid && newData.child('date').isNumber()"
+      }
+    }
+  }
+}

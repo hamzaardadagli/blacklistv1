@@ -1,0 +1,3587 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#09090b" />
+    <title>Blacklist Tabu</title>
+
+    <!-- Tailwind CSS (Play CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        if (window.tailwind) tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
+                        body: ['Figtree', 'system-ui', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <style>
+        /* ---------- Genel: koyu tema ---------- */
+        
+         :root {
+            color-scheme: dark;
+        }
+        
+        html,
+        body {
+            min-height: 100%;
+        }
+        
+        body {
+            margin: 0;
+            color: #f4f4f5;
+            font-family: Figtree, system-ui, sans-serif;
+            background: radial-gradient(circle at 15% 0%, rgba(239, 68, 68, 0.12), transparent 40%), radial-gradient(circle at 85% 100%, rgba(99, 102, 241, 0.12), transparent 45%), #09090b;
+            background-attachment: fixed;
+            -webkit-tap-highlight-color: transparent;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        
+        #app {
+            min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+        }
+        
+        h1,
+        h2,
+        h3 {
+            text-wrap: balance;
+        }
+        
+        .tabnum {
+            font-variant-numeric: tabular-nums;
+        }
+        
+         :focus-visible {
+            outline: 2px solid #fafafa;
+            outline-offset: 2px;
+        }
+        
+        [hidden] {
+            display: none !important;
+        }
+        /* Ekranlar: sadece .active olan görünür */
+        
+        .screen {
+            display: none;
+        }
+        
+        .screen.active {
+            display: flex;
+            animation: fadeUp .35s ease both;
+        }
+        
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+        /* Kart animasyonları */
+        
+        .card-in {
+            animation: cardIn .35s cubic-bezier(.2, .9, .3, 1.2) both;
+        }
+        
+        @keyframes cardIn {
+            from {
+                opacity: 0;
+                transform: translateY(18px) rotate(-2deg) scale(.96);
+            }
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+        
+        .shake {
+            animation: shake .4s ease;
+        }
+        
+        @keyframes shake {
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+            20% {
+                transform: translateX(-8px);
+            }
+            40% {
+                transform: translateX(8px);
+            }
+            60% {
+                transform: translateX(-5px);
+            }
+            80% {
+                transform: translateX(5px);
+            }
+        }
+        
+        .pop {
+            animation: pop .3s ease;
+        }
+        
+        @keyframes pop {
+            50% {
+                transform: scale(1.35);
+            }
+        }
+        
+        #card {
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            will-change: transform;
+        }
+        
+        .stamp {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .1s;
+        }
+        
+        #timerRing {
+            transition: stroke-dashoffset 1s linear, stroke .3s ease;
+        }
+        
+        .timer-warning {
+            animation: pulse 1s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            50% {
+                transform: scale(1.08);
+            }
+        }
+        
+        #gsBar {
+            transition: width 1s linear, background-color .3s;
+        }
+        
+        .opt.selected {
+            background: #fafafa;
+            color: #09090b;
+            border-color: #fafafa;
+        }
+        
+        .mode-card.selected {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.08);
+            box-shadow: 0 0 0 1px #ef4444, 0 10px 40px -10px rgba(239, 68, 68, .45);
+        }
+        
+        .chip.selected {
+            background: rgba(239, 68, 68, .14);
+            border-color: #ef4444;
+            color: #fecaca;
+        }
+        
+        .switch-track {
+            width: 40px;
+            height: 24px;
+            border-radius: 999px;
+            background: #3f3f46;
+            position: relative;
+            transition: background .2s;
+            flex-shrink: 0;
+        }
+        
+        .switch-track::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #fafafa;
+            transition: transform .2s;
+        }
+        
+        [aria-checked="true"] .switch-track {
+            background: #ef4444;
+        }
+        
+        [aria-checked="true"] .switch-track::after {
+            transform: translateX(16px);
+        }
+        
+        details>summary {
+            list-style: none;
+            cursor: pointer;
+        }
+        
+        details>summary::-webkit-details-marker {
+            display: none;
+        }
+        
+        details[open] .chev {
+            transform: rotate(180deg);
+        }
+        
+        #confetti {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 50;
+        }
+        
+        #toast {
+            transition: opacity .25s, transform .25s;
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: .01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: .01ms !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="confetti"></canvas>
+
+    <!-- Bildirim balonu ve bağlantı uyarısı -->
+    <div id="toast" class="pointer-events-none fixed inset-x-4 bottom-6 z-50 mx-auto max-w-sm translate-y-4 rounded-xl bg-zinc-100 px-4 py-3 text-center text-sm font-semibold text-zinc-950 opacity-0 shadow-2xl"></div>
+    <div id="offlineBar" hidden class="fixed inset-x-0 top-0 z-40 bg-amber-500 px-4 py-1.5 text-center text-xs font-bold text-zinc-950" style="padding-top: calc(env(safe-area-inset-top, 0px) + 6px)">Bağlantı koptu, yeniden bağlanılıyor…</div>
+
+    <div id="app" class="mx-auto flex w-full max-w-xl flex-col px-4 py-6 font-body antialiased sm:py-10">
+
+        <!-- =====================================================
+       1) KURULUM EKRANI
+       ===================================================== -->
+        <section id="screen-setup" class="screen active flex-col gap-5">
+            <header class="relative text-center">
+                <button id="openStatsBtn" class="absolute right-0 top-0 flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900/70 px-3 py-2 text-xs font-semibold text-zinc-300 transition hover:border-zinc-600">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+        İstatistik
+      </button>
+                <p class="pt-10 text-xs font-semibold uppercase tracking-[0.3em] text-red-400 sm:pt-0">Kelime anlatma oyunu</p>
+                <h1 class="mt-2 font-display text-5xl font-extrabold tracking-tight sm:text-6xl">Black<span class="text-red-500">list</span></h1>
+                <p class="mt-2 text-sm text-zinc-400">Yasaklı kelimeleri kullanmadan anlat, rakibinden fazla bildir.</p>
+
+            </header>
+
+            <!-- Nerede oynanacak -->
+            <div>
+                <h2 class="mb-2 text-sm font-semibold text-zinc-300">Nerede oynuyorsunuz?</h2>
+                <div class="grid grid-cols-2 gap-2" data-group="place">
+                    <button class="opt selected rounded-xl border border-zinc-700 px-3 py-2.5 text-sm font-semibold transition" data-value="local">Tek telefonda</button>
+                    <button class="opt rounded-xl border border-zinc-700 px-3 py-2.5 text-sm font-semibold transition" data-value="online">Online (Ayrı telefonlar)</button>
+                </div>
+            </div>
+
+            <!-- Online: oda kur / katıl -->
+            <div id="onlinePanel" hidden class="grid grid-cols-1 gap-3 rounded-2xl border border-red-500/40 bg-red-500/5 p-4">
+                <div id="onlineUnavailable" hidden class="rounded-xl bg-amber-500/10 p-3 text-sm text-amber-300">
+                    Online mod için dosyanın içine Firebase ayarlarının eklenmesi gerekiyor. Kurulum adımlarını tamamlayınca bu uyarı kaybolur.
+                </div>
+                <div>
+                    <label for="onlineName" class="text-xs font-medium text-zinc-400">Adın</label>
+                    <input id="onlineName" maxlength="18" autocomplete="off" class="mt-1 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 outline-none transition focus:border-red-500" placeholder="Örn. Hamza" />
+                </div>
+                <button id="createRoomBtn" class="rounded-xl bg-red-500 py-3 font-display text-lg font-bold text-white transition hover:bg-red-400 active:scale-[.98] disabled:opacity-40">Oda kur</button>
+                <div class="flex items-center gap-3 text-xs text-zinc-500"><span class="h-px flex-1 bg-zinc-800"></span>veya koda katıl<span class="h-px flex-1 bg-zinc-800"></span></div>
+                <div class="flex gap-2">
+                    <input id="joinCode" maxlength="5" autocomplete="off" autocapitalize="characters" class="tabnum min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-center font-display text-lg font-bold uppercase tracking-[0.3em] outline-none transition focus:border-red-500"
+                        placeholder="KOD" />
+                    <button id="joinRoomBtn" class="shrink-0 rounded-xl border border-zinc-600 px-5 font-bold transition hover:bg-zinc-900 active:scale-[.98] disabled:opacity-40">Katıl</button>
+                </div>
+                <p id="onlineError" hidden class="text-center text-sm text-red-400"></p>
+                <p class="text-xs text-zinc-500">Odayı kuran kişinin aşağıdaki ayarları (mod, kategori, zorluk, süre, tur, pas) geçerli olur.</p>
+            </div>
+
+            <!-- Mod seçimi -->
+            <div>
+                <h2 class="mb-3 text-sm font-semibold text-zinc-300">Oyun modu</h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <button data-mode="duo" class="mode-card selected rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 text-left transition hover:border-zinc-600">
+          <div class="font-display text-lg font-bold">Düello</div>
+          <div class="text-xs text-zinc-400">2 kişi · 1v1 bireysel skor</div>
+        </button>
+                    <button data-mode="team" class="mode-card rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 text-left transition hover:border-zinc-600">
+          <div class="font-display text-lg font-bold">Takım</div>
+          <div class="text-xs text-zinc-400">4+ kişi · klasik tabu</div>
+        </button>
+                </div>
+            </div>
+
+            <!-- İsimler -->
+            <div id="namesBlock" class="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
+                <h2 id="namesTitle" class="mb-3 text-sm font-semibold text-zinc-300">Oyuncular</h2>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <div class="space-y-2">
+                        <label id="label0" for="name0" class="text-xs font-medium text-red-400">1. Oyuncu</label>
+                        <input id="name0" maxlength="18" autocomplete="off" class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 outline-none transition focus:border-red-500" placeholder="İsim" />
+                        <input id="members0" autocomplete="off" class="team-only hidden w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm outline-none transition focus:border-red-500" placeholder="Üyeler (virgülle): Ali, Ece" />
+                    </div>
+                    <div class="space-y-2">
+                        <label id="label1" for="name1" class="text-xs font-medium text-indigo-400">2. Oyuncu</label>
+                        <input id="name1" maxlength="18" autocomplete="off" class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 outline-none transition focus:border-indigo-500" placeholder="İsim" />
+                        <input id="members1" autocomplete="off" class="team-only hidden w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm outline-none transition focus:border-indigo-500" placeholder="Üyeler (virgülle): Can, Deniz" />
+                    </div>
+                </div>
+                <p id="modeHint" class="mt-3 text-xs text-zinc-500"></p>
+            </div>
+
+            <!-- Kategori + zorluk -->
+            <div class="grid gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
+                <div>
+                    <div class="mb-2 flex items-baseline justify-between">
+                        <h2 class="text-sm font-semibold text-zinc-300">Kategori</h2>
+                        <span class="text-xs text-zinc-500">Birden fazla seçebilirsin</span>
+                    </div>
+                    <div id="catChips" class="flex flex-wrap gap-2"></div>
+                </div>
+                <div>
+                    <h2 class="mb-2 text-sm font-semibold text-zinc-300">Zorluk</h2>
+                    <div class="grid grid-cols-4 gap-2" data-group="diff">
+                        <button class="opt selected rounded-xl border border-zinc-700 py-2 text-sm font-semibold transition" data-value="mix">Karışık</button>
+                        <button class="opt rounded-xl border border-zinc-700 py-2 text-sm font-semibold transition" data-value="1">Kolay</button>
+                        <button class="opt rounded-xl border border-zinc-700 py-2 text-sm font-semibold transition" data-value="2">Orta</button>
+                        <button class="opt rounded-xl border border-zinc-700 py-2 text-sm font-semibold transition" data-value="3">Zor</button>
+                    </div>
+                    <p class="mt-2 text-xs text-zinc-500">Doğru bilinen kart: Kolay <b class="text-emerald-400">+1</b> · Orta <b class="text-amber-400">+2</b> · Zor <b class="text-red-400">+3</b>. Tabu her zaman −1. <span id="poolCount" class="text-zinc-400"></span></p>
+                </div>
+            </div>
+
+            <!-- Süre / tur / pas -->
+            <div class="grid gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
+                <div>
+                    <h2 class="mb-2 text-sm font-semibold text-zinc-300">Süre</h2>
+                    <div class="grid grid-cols-3 gap-2" data-group="duration">
+                        <button class="opt rounded-xl border border-zinc-700 py-2 font-semibold transition" data-value="45">45 sn</button>
+                        <button class="opt selected rounded-xl border border-zinc-700 py-2 font-semibold transition" data-value="60">60 sn</button>
+                        <button class="opt rounded-xl border border-zinc-700 py-2 font-semibold transition" data-value="90">90 sn</button>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="mb-2 text-sm font-semibold text-zinc-300">Tur sayısı</h2>
+                    <div class="grid grid-cols-3 gap-2" data-group="rounds">
+                        <button class="opt rounded-xl border border-zinc-700 py-2 font-semibold transition" data-value="2">2 tur</button>
+                        <button class="opt selected rounded-xl border border-zinc-700 py-2 font-semibold transition" data-value="3">3 tur</button>
+                        <button class="opt rounded-xl border border-zinc-700 py-2 font-semibold transition" data-value="5">5 tur</button>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="mb-2 text-sm font-semibold text-zinc-300">Tur başına pas hakkı</h2>
+                    <div class="grid grid-cols-3 gap-2" data-group="passes">
+                        <button class="opt rounded-xl border border-zinc-700 py-2 font-semibold transition" data-value="1">1 pas</button>
+                        <button class="opt selected rounded-xl border border-zinc-700 py-2 font-semibold transition" data-value="3">3 pas</button>
+                        <button class="opt rounded-xl border border-zinc-700 py-2 font-semibold transition" data-value="5">5 pas</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ses / titreşim / kaydırma -->
+            <div class="grid gap-1 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-2">
+                <button id="tSound" role="switch" aria-checked="true" class="flex items-center justify-between gap-3 rounded-xl px-2 py-2.5 text-left transition hover:bg-zinc-800/50">
+        <span><span class="block text-sm font-semibold">Ses efektleri</span><span class="block text-xs text-zinc-500">Doğru, tabu ve son 5 saniye uyarısı</span></span>
+        <span class="switch-track"></span>
+      </button>
+                <button id="tVibe" role="switch" aria-checked="true" class="flex items-center justify-between gap-3 rounded-xl px-2 py-2.5 text-left transition hover:bg-zinc-800/50">
+        <span><span class="block text-sm font-semibold">Titreşim</span><span class="block text-xs text-zinc-500">Tabu ve süre bitişinde (Android)</span></span>
+        <span class="switch-track"></span>
+      </button>
+                <button id="tSwipe" role="switch" aria-checked="true" class="flex items-center justify-between gap-3 rounded-xl px-2 py-2.5 text-left transition hover:bg-zinc-800/50">
+        <span><span class="block text-sm font-semibold">Kaydırarak oyna</span><span class="block text-xs text-zinc-500">Sağa doğru · sola tabu · yukarı pas. Butonlar da çalışır.</span></span>
+        <span class="switch-track"></span>
+      </button>
+            </div>
+
+            <p id="setupError" hidden class="text-center text-sm text-red-400"></p>
+            <button id="startBtn" class="rounded-2xl bg-red-500 py-4 font-display text-xl font-bold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-400 active:scale-[.98]">Oyunu Başlat</button>
+        </section>
+
+        <!-- =====================================================
+       2) ONLINE LOBİ
+       ===================================================== -->
+        <section id="screen-lobby" class="screen flex-col gap-5">
+            <header class="text-center">
+                <p class="text-xs font-semibold uppercase tracking-[0.3em] text-zinc-400">Oda kodu</p>
+                <p id="lobbyCode" class="tabnum mt-1 font-display text-6xl font-extrabold tracking-[0.2em] text-red-400">-----</p>
+                <p id="lobbySettings" class="mt-2 text-xs text-zinc-500"></p>
+            </header>
+
+            <div class="grid gap-2 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
+                <p class="text-sm text-zinc-300">Arkadaşına bu linki gönder ya da kodu söyle:</p>
+                <input id="lobbyLink" readonly class="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-400 outline-none" />
+                <button id="shareBtn" class="rounded-xl bg-zinc-100 py-2.5 text-sm font-bold text-zinc-950 transition hover:bg-white active:scale-[.98]">Linki paylaş</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="rounded-2xl border border-red-500/30 bg-red-500/5 p-3">
+                    <p id="lobbySideName0" class="mb-2 truncate text-sm font-bold text-red-300"></p>
+                    <ul id="lobbySide0" class="space-y-1.5 text-sm"></ul>
+                    <button id="joinSide0" class="mt-3 w-full rounded-lg border border-red-500/40 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/10">Bu tarafa geç</button>
+                </div>
+                <div class="rounded-2xl border border-indigo-500/30 bg-indigo-500/5 p-3">
+                    <p id="lobbySideName1" class="mb-2 truncate text-sm font-bold text-indigo-300"></p>
+                    <ul id="lobbySide1" class="space-y-1.5 text-sm"></ul>
+                    <button id="joinSide1" class="mt-3 w-full rounded-lg border border-indigo-500/40 py-1.5 text-xs font-semibold text-indigo-300 transition hover:bg-indigo-500/10">Bu tarafa geç</button>
+                </div>
+            </div>
+
+            <p id="lobbyStatus" class="text-center text-sm text-zinc-400"></p>
+            <button id="lobbyStartBtn" class="rounded-2xl bg-red-500 py-4 font-display text-xl font-bold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-400 active:scale-[.98] disabled:opacity-40 disabled:shadow-none">Oyunu Başlat</button>
+            <button class="leaveBtn text-sm text-zinc-500 underline">Odadan çık</button>
+        </section>
+
+        <!-- =====================================================
+       3) GEÇİŞ EKRANI
+       ===================================================== -->
+        <section id="screen-transition" class="screen flex-1 flex-col items-center justify-center gap-5 text-center">
+            <div id="lastTurnBox" hidden class="w-full rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 text-left">
+                <p class="text-xs uppercase tracking-widest text-zinc-500">Süre doldu</p>
+                <p class="mt-1 font-display text-xl font-bold"><span id="lastTurnName"></span> bu turda <span id="lastTurnPoints"></span> puan aldı</p>
+                <div class="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
+                    <div class="rounded-xl bg-emerald-500/10 py-2 text-emerald-400">✓ <span id="lastCorrect" class="tabnum">0</span> doğru</div>
+                    <div class="rounded-xl bg-red-500/10 py-2 text-red-400">✕ <span id="lastTaboo" class="tabnum">0</span> tabu</div>
+                    <div class="rounded-xl bg-amber-500/10 py-2 text-amber-400">↷ <span id="lastPass" class="tabnum">0</span> pas</div>
+                </div>
+                <p class="mb-2 mt-4 text-xs font-semibold uppercase tracking-widest text-zinc-500">Bu turun kartları</p>
+                <div id="lastTurnWords" class="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto"></div>
+                <!-- Düello: tahmin eden, anlatıcının yasaklı kelime kullandığı kartlara itiraz eder -->
+                <div id="objectBox" hidden class="mt-4 border-t border-zinc-800 pt-3">
+                    <p class="text-sm font-semibold text-amber-300">İtiraz</p>
+                    <p class="mb-2 text-xs text-zinc-400">Anlatıcı yasaklı kelimelerden birini kullandıysa o karta dokun. Kart tabu sayılır ve puan düzelir. Yanlışlıkla dokunduysan tekrar dokun, geri alınır.</p>
+                    <div id="objectList" class="grid max-h-72 gap-2 overflow-y-auto"></div>
+                </div>
+            </div>
+
+            <p id="roundLabel" class="text-sm font-semibold uppercase tracking-[0.3em] text-zinc-400">Tur 1 / 3</p>
+            <div id="nextBlock">
+                <p class="text-zinc-400">Sıra</p>
+                <h2 id="turnName" class="font-display text-5xl font-extrabold">—</h2>
+                <p id="turnSub" class="mt-3 text-zinc-400"></p>
+            </div>
+
+            <div class="grid w-full grid-cols-2 gap-3">
+                <div class="rounded-2xl border border-red-500/30 bg-red-500/5 p-4">
+                    <p id="tScoreName0" class="truncate text-sm text-red-300"></p>
+                    <p id="tScore0" class="tabnum font-display text-4xl font-extrabold">0</p>
+                </div>
+                <div class="rounded-2xl border border-indigo-500/30 bg-indigo-500/5 p-4">
+                    <p id="tScoreName1" class="truncate text-sm text-indigo-300"></p>
+                    <p id="tScore1" class="tabnum font-display text-4xl font-extrabold">0</p>
+                </div>
+            </div>
+
+            <p id="deckInfo" class="text-xs text-zinc-500"></p>
+            <p id="transHint" class="text-sm text-zinc-400"></p>
+
+            <button id="readyBtn" class="w-full rounded-2xl bg-zinc-100 py-4 font-display text-xl font-bold text-zinc-950 transition hover:bg-white active:scale-[.98]">Hazırım, Başla!</button>
+            <button id="finishBtn" hidden class="w-full rounded-2xl bg-zinc-100 py-4 font-display text-xl font-bold text-zinc-950 transition hover:bg-white active:scale-[.98]">Sonuçları Gör</button>
+            <button id="skipBtn" hidden class="w-full rounded-2xl border border-amber-500/50 py-3 text-sm font-semibold text-amber-300 transition hover:bg-amber-500/10">Anlatıcı bağlı değil, turu atla</button>
+            <button class="leaveBtn online-only text-sm text-zinc-500 underline">Odadan çık</button>
+        </section>
+
+        <!-- =====================================================
+       4) OYUN EKRANI (anlatıcı ve izleyen rakip takım)
+       ===================================================== -->
+        <section id="screen-game" class="screen flex-1 flex-col gap-3">
+            <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <p id="gRound" class="truncate text-xs font-semibold uppercase tracking-widest text-zinc-500">Tur 1/3</p>
+                    <p id="gNarrator" class="truncate font-display text-lg font-bold"></p>
+                </div>
+                <button id="pauseBtn" class="relative h-20 w-20 shrink-0 rounded-full" title="Duraklat" aria-label="Duraklat">
+        <svg class="h-full w-full -rotate-90" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="44" fill="none" stroke="#27272a" stroke-width="8" />
+          <circle id="timerRing" cx="50" cy="50" r="44" fill="none" stroke="#22c55e" stroke-width="8" stroke-linecap="round" />
+        </svg>
+        <span id="timerText" class="tabnum absolute inset-0 flex items-center justify-center font-display text-2xl font-extrabold">60</span>
+      </button>
+                <div class="text-right">
+                    <p class="text-xs font-semibold uppercase tracking-widest text-zinc-500">Bu tur</p>
+                    <p id="gTurnScore" class="tabnum font-display text-3xl font-extrabold">0</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-sm">
+                <div id="gSide0" class="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-2">
+                    <span id="gName0" class="truncate text-red-300"></span><span id="gScore0" class="tabnum font-bold">0</span>
+                </div>
+                <div id="gSide1" class="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-2">
+                    <span id="gName1" class="truncate text-indigo-300"></span><span id="gScore1" class="tabnum font-bold">0</span>
+                </div>
+            </div>
+
+            <p id="watchBanner" hidden class="rounded-xl bg-indigo-500/10 px-3 py-2 text-center text-sm text-indigo-200">Rakip takım anlatıyor. Tahmin etme, yasaklı kelime duyarsan <b>TABU!</b> butonuna bas.</p>
+
+            <div id="card" class="relative flex min-h-[340px] flex-1 flex-col overflow-hidden rounded-3xl border border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950 shadow-2xl">
+                <div class="relative flex flex-col items-center justify-center bg-zinc-100 px-4 pb-7 pt-9 text-zinc-950">
+                    <span id="cardCat" class="absolute left-3 top-3 rounded-full bg-zinc-950/5 px-2.5 py-1 text-[11px] font-semibold text-zinc-600"></span>
+                    <span id="cardLevel" class="absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-bold"></span>
+                    <h2 id="mainWord" class="text-center font-display text-4xl font-extrabold uppercase leading-tight sm:text-5xl">KELİME</h2>
+                </div>
+                <div class="flex flex-1 flex-col justify-center gap-2 p-5">
+                    <p class="mb-1 text-center text-[10px] font-bold uppercase tracking-[0.35em] text-red-500/80">Yasaklı kelimeler</p>
+                    <ul id="tabooList" class="space-y-2"></ul>
+                </div>
+
+                <div id="stampCorrect" class="stamp absolute inset-0 flex items-center justify-center bg-emerald-500/25">
+                    <span class="rotate-[-12deg] rounded-2xl border-4 border-emerald-400 px-5 py-2 font-display text-4xl font-extrabold text-emerald-300">DOĞRU</span>
+                </div>
+                <div id="stampTaboo" class="stamp absolute inset-0 flex items-center justify-center bg-red-500/25">
+                    <span class="rotate-[12deg] rounded-2xl border-4 border-red-400 px-5 py-2 font-display text-4xl font-extrabold text-red-300">TABU</span>
+                </div>
+                <div id="stampPass" class="stamp absolute inset-0 flex items-center justify-center bg-amber-500/25">
+                    <span class="rounded-2xl border-4 border-amber-400 px-5 py-2 font-display text-4xl font-extrabold text-amber-300">PAS</span>
+                </div>
+
+                <div id="pauseOverlay" hidden class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-950/95 p-4 text-center backdrop-blur">
+                    <p id="pauseTitle" class="font-display text-3xl font-bold">Duraklatıldı</p>
+                    <div id="pauseActions" class="flex flex-col items-center gap-3">
+                        <button id="resumeBtn" class="rounded-xl bg-zinc-100 px-6 py-3 font-bold text-zinc-950">Devam Et</button>
+                        <div id="quitWrap" class="flex flex-col items-center gap-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="controls" class="flex flex-col gap-3">
+                <p id="swipeHint" class="text-center text-xs text-zinc-500">← Tabu · ↑ Pas · Doğru →</p>
+                <div class="grid grid-cols-3 gap-3">
+                    <button id="tabooBtn" class="flex flex-col items-center rounded-2xl bg-red-500/15 py-3.5 font-bold text-red-400 ring-1 ring-red-500/40 transition hover:bg-red-500/25 active:scale-95">
+          <span class="text-2xl leading-none">✕</span><span class="mt-1">Tabu</span><span class="text-[11px] font-medium opacity-70">−1 puan</span>
+        </button>
+                    <button id="passBtn" class="flex flex-col items-center rounded-2xl bg-amber-500/15 py-3.5 font-bold text-amber-400 ring-1 ring-amber-500/40 transition hover:bg-amber-500/25 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30">
+          <span class="text-2xl leading-none">↷</span><span class="mt-1">Pas</span><span class="text-[11px] font-medium opacity-70"><span id="passCount">3</span> hak kaldı</span>
+        </button>
+                    <button id="correctBtn" class="flex flex-col items-center rounded-2xl bg-emerald-500 py-3.5 font-bold text-zinc-950 shadow-lg shadow-emerald-500/25 transition hover:bg-emerald-400 active:scale-95">
+          <span class="text-2xl leading-none">✓</span><span class="mt-1">Doğru</span><span class="text-[11px] font-medium opacity-70"><span id="correctPts">+1</span> puan</span>
+        </button>
+                </div>
+                <p class="hidden text-center text-xs text-zinc-600 sm:block">Klavye: D = Doğru · T = Tabu · P = Pas · Boşluk = Duraklat</p>
+            </div>
+
+            <!-- Takım modu: izleyen rakip takımın zili -->
+            <button id="callTabooBtn" hidden class="flex flex-col items-center rounded-2xl bg-red-500 py-4 font-display text-white shadow-lg shadow-red-500/30 transition hover:bg-red-400 active:scale-95 disabled:opacity-40 disabled:shadow-none">
+      <span class="text-3xl font-extrabold leading-none">TABU!</span>
+      <span id="callTabooSub" class="mt-1 text-xs font-medium opacity-80">Anlatıcı yasaklı kelime söyledi · −1</span>
+    </button>
+        </section>
+
+        <!-- =====================================================
+       5) TAHMİN EKRANI (online: kartı görmeyen oyuncu)
+       ===================================================== -->
+        <section id="screen-guess" class="screen flex-1 flex-col items-center justify-between gap-5 text-center">
+            <div class="w-full">
+                <p id="gsRound" class="text-xs font-semibold uppercase tracking-widest text-zinc-500"></p>
+                <p id="gsNarrator" class="mt-1 font-display text-2xl font-bold"></p>
+                <p class="mt-1 text-sm text-zinc-400">anlatıyor. Bildiğin anda sesli söyle!</p>
+            </div>
+
+            <div class="flex w-full flex-col items-center gap-4">
+                <p id="gsTimer" class="tabnum font-display text-8xl font-extrabold leading-none">60</p>
+                <div class="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+                    <div id="gsBar" class="h-full rounded-full bg-emerald-500" style="width:100%"></div>
+                </div>
+                <p id="gsPaused" hidden class="rounded-lg bg-amber-500/15 px-3 py-1 text-sm font-semibold text-amber-300">Anlatıcı duraklattı</p>
+            </div>
+
+            <div id="gsFlash" class="flex h-24 w-full items-center justify-center rounded-3xl border border-zinc-800 bg-zinc-900/60 font-display text-3xl font-extrabold text-zinc-500 transition">Kart anlatılıyor…</div>
+
+            <div class="w-full">
+                <p class="text-xs font-semibold uppercase tracking-widest text-zinc-500">Bu tur</p>
+                <p id="gsTurnScore" class="tabnum font-display text-5xl font-extrabold">0</p>
+            </div>
+
+            <div class="grid w-full grid-cols-2 gap-2 text-sm">
+                <div class="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-2">
+                    <span id="gsName0" class="truncate text-red-300"></span><span id="gsScore0" class="tabnum font-bold">0</span>
+                </div>
+                <div class="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-2">
+                    <span id="gsName1" class="truncate text-indigo-300"></span><span id="gsScore1" class="tabnum font-bold">0</span>
+                </div>
+            </div>
+            <button class="leaveBtn text-sm text-zinc-500 underline">Odadan çık</button>
+        </section>
+
+        <!-- =====================================================
+       6) FİNAL EKRANI
+       ===================================================== -->
+        <section id="screen-final" class="screen flex-1 flex-col items-center justify-center gap-6 text-center">
+            <div class="text-7xl" id="finalEmoji">🏆</div>
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.3em] text-zinc-400">Oyun bitti</p>
+                <h2 id="winnerText" class="mt-2 font-display text-4xl font-extrabold sm:text-5xl"></h2>
+                <p id="winnerSub" class="mt-2 text-zinc-400"></p>
+            </div>
+
+            <div class="w-full overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60">
+                <table class="tabnum w-full text-sm">
+                    <thead class="bg-zinc-900 text-xs uppercase tracking-wider text-zinc-500">
+                        <tr>
+                            <th class="px-3 py-2 text-left">Tur</th>
+                            <th id="fHead0" class="px-3 py-2 text-right text-red-300"></th>
+                            <th id="fHead1" class="px-3 py-2 text-right text-indigo-300"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="finalRows"></tbody>
+                    <tfoot class="border-t border-zinc-800 font-display text-lg font-bold">
+                        <tr>
+                            <td class="px-3 py-3 text-left">Toplam</td>
+                            <td id="fTotal0" class="px-3 py-3 text-right"></td>
+                            <td id="fTotal1" class="px-3 py-3 text-right"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="w-full text-left">
+                <h3 class="mb-2 text-sm font-semibold text-zinc-300">Genel kelime listesi</h3>
+                <div id="finalWordList" class="grid gap-2"></div>
+            </div>
+
+            <div class="grid w-full grid-cols-2 gap-3">
+                <button id="rematchBtn" class="rounded-2xl bg-red-500 py-4 font-display text-lg font-bold text-white transition hover:bg-red-400 active:scale-[.98]">Rövanş</button>
+                <button id="menuBtn" class="rounded-2xl border border-zinc-700 py-4 font-display text-lg font-bold transition hover:bg-zinc-900 active:scale-[.98]">Ana Menü</button>
+                <p id="finalWait" hidden class="col-span-2 text-sm text-zinc-400">Rövanş için oda sahibini bekle.</p>
+                <button id="finalStatsBtn" class="col-span-2 rounded-2xl border border-zinc-800 py-3 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-900">İstatistikleri gör</button>
+                <button class="leaveBtn online-only col-span-2 text-sm text-zinc-500 underline">Odadan çık</button>
+            </div>
+        </section>
+
+        <!-- =====================================================
+       7) İSTATİSTİK & GEÇMİŞ
+       ===================================================== -->
+        <section id="screen-stats" class="screen flex-col gap-5">
+            <header class="flex items-center gap-3">
+                <button id="statsBackBtn" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/70 transition hover:border-zinc-600" aria-label="Geri">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+                <div>
+                    <h2 class="font-display text-3xl font-extrabold">İstatistikler</h2>
+                    <p id="statsSub" class="text-xs text-zinc-500">Bu cihazda oynanan oyunlar</p>
+                </div>
+            </header>
+
+            <!-- Kaynak: bu cihaz / Firebase'deki online oyun kayıtları -->
+            <div id="statsSource" class="grid grid-cols-2 gap-2">
+                <button class="opt selected rounded-xl border border-zinc-700 py-2 text-sm font-semibold transition" data-src="local">Bu cihaz</button>
+                <button class="opt rounded-xl border border-zinc-700 py-2 text-sm font-semibold transition" data-src="online">Online (herkes)</button>
+            </div>
+
+            <p id="statsLoading" hidden class="text-center text-sm text-zinc-400">Online kayıtlar yükleniyor…</p>
+
+            <div id="statsEmpty" hidden class="rounded-2xl border border-dashed border-zinc-800 p-8 text-center text-sm text-zinc-400"></div>
+
+            <div id="statsBody" class="flex flex-col gap-5">
+                <div id="statTiles" class="grid grid-cols-2 gap-3"></div>
+                <div>
+                    <h3 class="mb-2 text-sm font-semibold text-zinc-300">Rekorlar</h3>
+                    <div id="recordList" class="grid gap-2"></div>
+                </div>
+                <div>
+                    <h3 class="mb-2 text-sm font-semibold text-zinc-300">Oyuncu sıralaması</h3>
+                    <div class="overflow-x-auto rounded-2xl border border-zinc-800 bg-zinc-900/60">
+                        <table class="tabnum w-full min-w-[440px] text-sm">
+                            <thead class="bg-zinc-900 text-[11px] uppercase tracking-wider text-zinc-500">
+                                <tr>
+                                    <th class="px-3 py-2 text-left">Oyuncu</th>
+                                    <th class="px-2 py-2 text-right">Oyun</th>
+                                    <th class="px-2 py-2 text-right">Galibiyet</th>
+                                    <th class="px-2 py-2 text-right">Doğru</th>
+                                    <th class="px-2 py-2 text-right">Tabu</th>
+                                    <th class="px-3 py-2 text-right">Doğru/dk</th>
+                                </tr>
+                            </thead>
+                            <tbody id="playerRows"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="mb-2 text-sm font-semibold text-zinc-300">Oyun geçmişi</h3>
+                    <div id="historyList" class="grid gap-2"></div>
+                </div>
+                <div id="clearWrap" class="flex flex-col items-center gap-2 pb-4"></div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        /* =========================================================
+           FIREBASE AYARLARI
+           Firebase konsolundaki "firebaseConfig" nesnesini buraya yapıştırın.
+           databaseURL alanının dolu olması şart.
+           ========================================================= */
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyCO42lCczz5G0sM8cN1CFHp85ULHhlAfno",
+            authDomain: "blacklist-1e5bb.firebaseapp.com",
+            databaseURL: "https://blacklist-1e5bb-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "blacklist-1e5bb",
+            storageBucket: "blacklist-1e5bb.firebasestorage.app",
+            messagingSenderId: "1020173345749",
+            appId: "1:1020173345749:web:d33ca2bd5ab87d52b2535c",
+        };
+        const ONLINE_AVAILABLE = !!window.BLACKLIST_BACKEND ||
+            (!!FIREBASE_CONFIG.databaseURL && !String(FIREBASE_CONFIG.apiKey).startsWith('BURAYA'));
+
+        /* =========================================================
+           KATEGORİLER VE KARTLAR
+           Her kategori 3 blok içerir: [Kolay, Orta, Zor].
+           Satır formatı → "Kelime: yasak1, yasak2, yasak3, yasak4, yasak5"
+           ÖNEMLİ: Online oyunda herkes aynı dosya sürümünü kullanmalı
+           (kartlar sıra numarasıyla eşleştirilir).
+           ========================================================= */
+        const CATEGORIES = [{
+            id: 'yemek',
+            name: 'Yemek & İçecek'
+        }, {
+            id: 'doga',
+            name: 'Hayvanlar & Doğa'
+        }, {
+            id: 'spor',
+            name: 'Spor & Eğlence'
+        }, {
+            id: 'gunluk',
+            name: 'Günlük Hayat & Meslekler'
+        }, {
+            id: 'kultur',
+            name: 'Sanat & Kültür'
+        }, {
+            id: 'bilim',
+            name: 'Bilim & Teknoloji'
+        }, {
+            id: 'yerler',
+            name: 'Yerler & Seyahat'
+        }, ];
+
+        const RAW = {
+            yemek: [`
+Pizza: İtalyan, Hamur, Peynir, Dilim, Fırın
+Kahve: Fincan, Türk, Köpük, Kafein, Çekirdek
+Çay: Bardak, Demlik, Rize, Şeker, Sıcak
+Simit: Susam, Çay, Kahvaltı, Yuvarlak, Fırın
+Dondurma: Soğuk, Külah, Yaz, Maraş, Top
+Çikolata: Kakao, Tatlı, Sütlü, Bitter, Tablet
+Karpuz: Yaz, Kırmızı, Çekirdek, Meyve, Kavun
+Ekmek: Fırın, Un, Dilim, Somun, Fırıncı
+Yumurta: Tavuk, Sarı, Kabuk, Omlet, Haşlanmış
+Süt: İnek, Beyaz, İçmek, Kalsiyum, Kahvaltı
+Muz: Sarı, Maymun, Meyve, Kabuk, Tropikal
+Hamburger: Köfte, Ekmek, Fast food, Patates, Amerikan
+Elma: Kırmızı, Yeşil, Meyve, Ağaç, Newton
+Limon: Ekşi, Sarı, Sıkmak, C vitamini, Salata
+Bal: Arı, Tatlı, Petek, Sarı, Kahvaltı
+Peynir: Beyaz, Kaşar, Süt, Kahvaltı, Fare
+Domates: Kırmızı, Salata, Sebze, Salça, Bahçe
+Patates: Kızartma, Toprak, Cips, Haşlama, Püre
+Çorba: Kaşık, Kase, Sıcak, Mercimek, Başlangıç
+Salata: Marul, Yeşillik, Zeytinyağı, Domates, Sos
+Pasta: Doğum günü, Mum, Krema, Dilim, Tatlı
+Kurabiye: Fırın, Tatlı, Çay, Un, Şeker
+Portakal: Turuncu, Meyve, Sıkmak, Vitamin, Kabuk
+Çilek: Kırmızı, Meyve, Reçel, Tohum, Bahar
+Üzüm: Salkım, Bağ, Şarap, Kuru, Asma
+Zeytin: Siyah, Yeşil, Yağ, Kahvaltı, Çekirdek
+Şeker: Tatlı, Küp, Çay, Beyaz, Diyabet
+Tuz: Beyaz, Biber, Deniz, Yemek, Sofra
+Havuç: Turuncu, Tavşan, Göz, Sebze, Kök
+Soğan: Ağlamak, Kabuk, Doğramak, Mor, Sarımsak
+Kek: Fırın, Çay, Dilim, Kakao, Yumurta
+Pide: Karadeniz, Fırın, Kıymalı, Kaşarlı, Hamur
+Köfte: Kıyma, Izgara, Yuvarlak, Et, İnegöl
+Tavuk: Kanat, Göğüs, But, Beyaz et, Kümes
+Pirinç: Pilav, Beyaz, Tane, Çin, Sushi
+Reçel: Kavanoz, Çilek, Kahvaltı, Tatlı, Ekmek
+Tereyağı: Süt, Sarı, Kahvaltı, Erimek, Ekmek
+Yoğurt: Süt, Ayran, Beyaz, Mayalamak, Kase
+Kiraz: Kırmızı, Çekirdek, Sap, Meyve, Küpe
+Armut: Meyve, Yeşil, Sarı, Ağaç, Elma
+Kavun: Sarı, Yaz, Meyve, Çekirdek, Karpuz
+Sandviç: Ekmek, Arası, Peynir, Salam, Tost
+Cips: Patates, Paket, Çıtır, Tuzlu, Atıştırmalık
+Kola: Gazlı, İçecek, Siyah, Şişe, Buz
+Limonata: Ekşi, Şeker, Soğuk, Yaz, Bardak
+Sosisli: Hot dog, Ekmek, Ketçap, Hardal, Sokak
+Mandalina: Turuncu, Kabuk, Kış, Dilim, Portakal
+Ceviz: Kabuk, Beyin, Ağaç, Kırmak, Kuruyemiş`, `
+Baklava: Tatlı, Şerbet, Fıstık, Antep, Yufka
+Tost: Kaşar, Ekmek, Makine, Sucuk, Kızarmış
+Menemen: Yumurta, Domates, Biber, Tava, Kahvaltı
+Lahmacun: Kıyma, İnce, Hamur, Limon, Maydanoz
+Döner: Et, Şiş, Dürüm, Tavuk, Kesmek
+Mantı: Kayseri, Hamur, Yoğurt, Kıyma, Küçük
+Ayran: Yoğurt, Su, Tuz, İçecek, Köpük
+Kokoreç: Bağırsak, Kuzu, Ekmek, Sokak, Baharat
+Sucuk: Kasap, Kayseri, Kahvaltı, Baharat, Et
+Pilav: Pirinç, Tereyağı, Bulgur, Tabak, Nohut
+Börek: Yufka, Peynir, Ispanak, Fırın, Kol
+Makarna: İtalyan, Spagetti, Haşlamak, Sos, Hamur
+Turşu: Sirke, Salatalık, Kavanoz, Ekşi, Suyu
+Kumpir: Patates, Ortaköy, Fırın, Malzeme, Mısır
+Patlamış mısır: Sinema, Tuz, Tereyağı, Patlamak, Tane
+Pastırma: Kayseri, Çemen, Et, Kurutulmuş, Sarımsak
+Mercimek çorbası: Kırmızı, Limon, Kase, Lokanta, Sıcak
+Sarma: Yaprak, Pirinç, Zeytinyağlı, Asma, Dolma
+Dolma: Biber, Pirinç, İç, Doldurmak, Zeytinyağlı
+Kebap: Adana, Urfa, Şiş, Et, Mangal
+Pişmaniye: Kocaeli, İzmit, Tel, Tatlı, Pamuk
+Lokum: Türk, Gül, Pudra, Tatlı, Kutu
+Helva: Tahin, İrmik, Tatlı, Cenaze, Un
+Sütlaç: Pirinç, Kase, Fırın, Tatlı, Tarçın
+Kazandibi: Yanık, Süt, Tatlı, Tepsi, Muhallebi
+Dürüm: Lavaş, Sarmak, Döner, Tavuk, Et
+Kahvaltı: Sabah, Çay, Peynir, Yumurta, Zeytin
+Mangal: Kömür, Et, Piknik, Ateş, Izgara
+Waffle: Çikolata, Meyve, Ortaköy, Hamur, Kare
+Krep: Fransız, İnce, Hamur, Nutella, Tava
+Omlet: Yumurta, Tava, Peynir, Kahvaltı, Çırpmak
+Pankek: Amerikan, Şurup, Kahvaltı, Tava, Kabarık
+Nohut: Pilav, Leblebi, Bakliyat, Yuvarlak, Humus
+Humus: Nohut, Tahin, Arap, Ezme, Meze
+Meze: Rakı, Soğuk, Tabak, Başlangıç, Haydari
+Cacık: Yoğurt, Salatalık, Sarımsak, Nane, Soğuk
+Muhallebi: Süt, Nişasta, Tatlı, Kase, Pudra
+Lahana: Sebze, Sarma, Turşu, Yaprak, Kış
+Patlıcan: Mor, Karnıyarık, Közlemek, Sebze, Musakka
+Ispanak: Yeşil, Temel Reis, Demir, Sebze, Yaprak
+Kuru fasulye: Pilav, Bakliyat, Salça, Beyaz, Lokanta
+Tavuk göğsü: Tatlı, Süt, Tel tel, Muhallebi, Et
+Ciğer: Edirne, Tava, Sakatat, Kızartma, Arnavut
+Balık ekmek: Eminönü, Tekne, Sandviç, Uskumru, Soğan
+Midye dolma: Kabuk, Pirinç, Limon, Sokak, Deniz
+Poğaça: Pastane, Hamur, Peynirli, Kahvaltı, Yumuşak
+Açma: Pastane, Yumuşak, Simit, Kahvaltı, Halka
+Şalgam: Adana, Mor, Acı, Kebap, İçecek`, `
+İskender: Döner, Bursa, Tereyağı, Yoğurt, Pide
+Aşure: Buğday, Muharrem, Nohut, Tatlı, Komşu
+Sushi: Japon, Çiğ, Balık, Pirinç, Yosun
+Kısır: Bulgur, Salça, Maydanoz, Nar ekşisi, Gün
+Çiğ köfte: Bulgur, Acı, Marul, Dürüm, İsot
+Hünkar beğendi: Patlıcan, Et, Padişah, Beşamel, Osmanlı
+Tiramisu: İtalyan, Kahve, Mascarpone, Kakao, Tatlı
+Künefe: Hatay, Kadayıf, Peynir, Şerbet, Sıcak
+Karnıyarık: Patlıcan, Kıyma, Fırın, Domates, Biber
+Espresso: Kahve, İtalyan, Sert, Shot, Makine
+Salep: Kış, Tarçın, Sıcak, Süt, Orkide
+Kaymak: Bal, Manda, Süt, Kahvaltı, Afyon
+Fondü: Peynir, Eritmek, İsviçre, Çikolata, Batırmak
+Gözleme: Sac, Hamur, Peynir, Köy, Ispanak
+Boza: Kış, Leblebi, Ekşi, Vefa, Darı
+Mıhlama: Karadeniz, Mısır unu, Peynir, Tereyağı, Uzamak
+Tantuni: Mersin, Et, Dürüm, Sac, Pamuk yağı
+Ali Nazik: Patlıcan, Yoğurt, Kebap, Gaziantep, Et
+Beyti: Kebap, Lavaş, Yoğurt, Sarma, Kıyma
+Katmer: Gaziantep, Fıstık, Kaymak, Hamur, Kahvaltı
+Çağ kebabı: Erzurum, Yatay, Şiş, Kuzu, Döner
+Hamsi tava: Karadeniz, Mısır unu, Balık, Kızartma, Kış
+Mücver: Kabak, Kızartma, Dereotu, Yumurta, Köfte
+Kuzu tandır: Fırın, Et, Yavaş, Pilav, Kuyu
+Ravioli: İtalyan, Hamur, Doldurmak, Mantı, Kare
+Risotto: İtalyan, Pirinç, Kremalı, Parmesan, Mantar
+Paella: İspanyol, Pirinç, Deniz ürünleri, Safran, Tava
+Taco: Meksika, Tortilla, Kıyma, Sos, Katlamak
+Burrito: Meksika, Tortilla, Sarmak, Fasulye, Pilav
+Kruvasan: Fransız, Tereyağı, Hilal, Kahvaltı, Pastane
+Makaron: Fransız, Renkli, Badem, Kurabiye, Tatlı
+Cheesecake: Peynir, Tatlı, Pasta, Bisküvi, Frambuaz
+Brownie: Çikolata, Kek, Amerikan, Ceviz, Kare
+Kombucha: Mantar, Fermente, Çay, Ekşi, İçecek
+Matcha: Yeşil, Çay, Japon, Toz, Latte
+Kefir: Süt, Fermente, Mayalı, Ayran, Probiyotik
+Tahin: Susam, Pekmez, Helva, Ezme, Kahvaltı
+Pekmez: Üzüm, Tahin, Koyu, Tatlı, Kahvaltı
+Sumak: Baharat, Kırmızı, Ekşi, Soğan, Kebap
+Kekik: Baharat, Yeşil, Yaprak, Pizza, Bitki
+Zerdeçal: Sarı, Baharat, Köri, Hint, Toz
+Safran: Sarı, Pahalı, Baharat, Zerde, Pilav
+Trileçe: Süt, Karamel, Balkan, Tatlı, Kek
+Revani: İrmik, Şerbet, Tatlı, Hindistan cevizi, Kek
+Güllaç: Ramazan, Süt, Yaprak, Nar, Tatlı
+Höşmerim: Peynir, Tatlı, Balıkesir, İrmik, Tereyağı
+Kuzu incik: Et, Fırın, Kemik, Bacak, Pişmek
+Lakerda: Palamut, Tuzlama, Meze, Balık, Rakı`],
+
+            doga: [`
+Aslan: Kral, Orman, Yele, Kedi, Kükremek
+Kedi: Miyav, Tekir, Evcil, Fare, Tırmalamak
+Köpek: Havlamak, Sadık, Kemik, Evcil, Kuyruk
+Balık: Deniz, Olta, Yüzmek, Pul, Solungaç
+Arı: Bal, Sokmak, Kovan, Vızıltı, Çiçek
+Penguen: Kuş, Buz, Kutup, Siyah beyaz, Uçamaz
+Fil: Hortum, Büyük, Afrika, Kulak, Gri
+Deniz: Su, Mavi, Dalga, Plaj, Tuzlu
+Güneş: Sıcak, Işık, Gökyüzü, Yıldız, Sarı
+Yağmur: Şemsiye, Bulut, Islak, Damla, Hava
+Kar: Beyaz, Kış, Soğuk, Kayak, Yağmak
+Ağaç: Yaprak, Dal, Orman, Gövde, Kök
+Çiçek: Gül, Koku, Bahçe, Yaprak, Vazo
+İnek: Süt, Möö, Çiftlik, Boynuz, Ot
+Tavşan: Havuç, Kulak, Zıplamak, Beyaz, Hızlı
+Maymun: Muz, Ağaç, Tırmanmak, Şempanze, Kuyruk
+At: Nal, Koşmak, Eyer, Yarış, Kişnemek
+Horoz: Sabah, Ötmek, İbik, Tavuk, Kukuriku
+Koyun: Yün, Kuzu, Meee, Çoban, Sürü
+Keçi: Boynuz, Süt, Dağ, Sakal, Peynir
+Ayı: Bal, Kış uykusu, Orman, Büyük, Pençe
+Kurt: Uluma, Sürü, Ay, Orman, Kırmızı Başlıklı Kız
+Tilki: Kurnaz, Kızıl, Kuyruk, Orman, Kümes
+Fare: Peynir, Kedi, Kemirgen, Küçük, Kapan
+Kuş: Kanat, Uçmak, Yuva, Tüy, Ötmek
+Kurbağa: Vırak, Yeşil, Zıplamak, Göl, Prens
+Yılan: Sürünmek, Zehir, Tıslamak, Uzun, Deri
+Karınca: Küçük, Çalışkan, Yuva, Kraliçe, Böcek
+Örümcek: Ağ, Sekiz, Bacak, Böcek, Örmek
+Köpekbalığı: Deniz, Diş, Yüzgeç, Tehlikeli, Jaws
+Yunus: Deniz, Zeki, Gösteri, Memeli, Atlamak
+Balina: Büyük, Okyanus, Mavi, Memeli, Fışkırtmak
+Bulut: Gökyüzü, Beyaz, Yağmur, Pamuk, Hava
+Rüzgar: Esmek, Hava, Soğuk, Uçurtma, Değirmen
+Dağ: Zirve, Yüksek, Tırmanmak, Kar, Tepe
+Nehir: Akmak, Su, Köprü, Irmak, Dere
+Orman: Ağaç, Yeşil, Hayvan, Kamp, Geyik
+Göl: Su, Tatlı, Kıyı, Van, Ördek
+Yıldız: Gece, Parlamak, Gökyüzü, Kayan, Uzay
+Kum: Plaj, Sahil, Çöl, Tane, Kale
+Gül: Kırmızı, Diken, Çiçek, Sevgili, Koku
+Papatya: Beyaz, Sarı, Çiçek, Seviyor, Yaprak
+Ördek: Vak, Göl, Yüzmek, Gaga, Donald
+Tavus kuşu: Kuyruk, Renkli, Tüy, Açmak, Gösteriş
+Papağan: Konuşmak, Renkli, Kuş, Taklit, Korsan
+Kış: Soğuk, Kar, Aralık, Mont, Mevsim
+Yaz: Sıcak, Tatil, Deniz, Mevsim, Güneş
+Bahar: Çiçek, Mart, Nisan, Mevsim, Yeşermek
+Sonbahar: Yaprak, Eylül, Düşmek, Mevsim, Güz`, `
+Zürafa: Boyun, Uzun, Afrika, Benek, Yaprak
+Kaplumbağa: Kabuk, Yavaş, Yüzmek, Sürüngen, Deniz
+Yarasa: Gece, Mağara, Kör, Kanat, Vampir
+Gökkuşağı: Renk, Yağmur, Yedi, Güneş, Kemer
+Yanardağ: Lav, Patlamak, Volkan, Magma, Kül
+Şelale: Su, Akmak, Yüksek, Niagara, Kaya
+Kartal: Kuş, Pençe, Yırtıcı, Gaga, Uçmak
+Ahtapot: Sekiz, Kol, Mürekkep, Deniz, Vantuz
+Kelebek: Kanat, Tırtıl, Renkli, Böcek, Uçmak
+Deve: Hörgüç, Çöl, Su, Kum, Sahra
+Kutup ayısı: Beyaz, Buz, Soğuk, Kuzey, Fok
+Mantar: Orman, Zehirli, Şapka, Nem, Yemek
+Timsah: Nehir, Diş, Sürüngen, Çanta, Gözyaşı
+Fırtına: Rüzgar, Yağmur, Şimşek, Gök gürültüsü, Hava
+Sincap: Fındık, Kuyruk, Ağaç, Kış, Kemirgen
+Leylek: Göç, Bacak, Uzun, Bebek getirmek, Yuva
+Karga: Siyah, Gaklamak, Kuş, Korkuluk, Zeki
+Martı: Deniz, Vapur, Simit, Beyaz, Çığlık
+Sinek: Vızıltı, Böcek, Sinir, Yemek, Kanat
+Sivrisinek: Kaşıntı, Kan, Isırmak, Yaz, Vızıltı
+Uğur böceği: Kırmızı, Nokta, Şans, Siyah, Böcek
+Hamster: Kafes, Tekerlek, Yanak, Kemirgen, Evcil
+Kirpi: Diken, Top olmak, Gece, Küçük, Bahçe
+Geyik: Boynuz, Orman, Noel Baba, Kızak, Muhabbet
+Zebra: Çizgili, Siyah beyaz, At, Afrika, Yaya geçidi
+Gergedan: Boynuz, Afrika, Kalın deri, Büyük, Gri
+Su aygırı: Hipopotam, Nehir, Büyük, Afrika, Ağız
+Panda: Bambu, Çin, Siyah beyaz, Ayı, Tembel
+Goril: Maymun, Büyük, King Kong, Göğüs, Orman
+Deniz yıldızı: Beş, Kol, Kum, Pembe, Okyanus
+Denizanası: Yakmak, Şeffaf, Plaj, Dokunaç, Jöle
+Istakoz: Kırmızı, Kıskaç, Pahalı, Deniz ürünü, Yengeç
+Yengeç: Yan yan, Kıskaç, Kabuk, Burç, Deniz
+Kaktüs: Diken, Çöl, Su, Bitki, Saksı
+Bambu: Panda, Uzun, Çin, Kamış, Ağaç
+Yosun: Yeşil, Taş, Nem, Kaygan, Deniz
+Kaya: Taş, Sert, Dağ, Büyük, Tırmanmak
+Vadi: Dağ, Arası, Nehir, Kanyon, Çukur
+Buzul: Kuzey, Erimek, Kutup, Dağ, Titanik
+Sis: Görüş, Beyaz, Hava, Puslu, Sabah
+Dolu: Buz, Yağmak, Top, Araba, Hasar
+Şimşek: Işık, Fırtına, Yıldırım, Gök gürültüsü, Çakmak
+Hortum: Rüzgar, Dönmek, Kasırga, Amerika, Fırtına
+Sel: Su, Yağmur, Basmak, Afet, Taşkın
+Kuraklık: Su, Yağmur, Yok, Kurumak, Tarım
+Deve kuşu: Kafa, Kum, Koşmak, Uçamaz, Yumurta
+Flamingo: Pembe, Tek ayak, Kuş, Göl, Uzun
+Jaguar: Kedi, Benek, Hızlı, Araba, Güney Amerika`, `
+Bukalemun: Renk, Değiştirmek, Kertenkele, Dil, Kamuflaj
+Kanguru: Avustralya, Kese, Zıplamak, Yavru, Boks
+Mercan: Resif, Deniz, Kırmızı, Okyanus, Canlı
+Deprem: Sallanmak, Fay, Richter, Yıkım, Afet
+Çığ: Kar, Dağ, Kaymak, Kayak, Tehlike
+Tsunami: Dalga, Deprem, Deniz, Japonya, Dev
+Fotosentez: Bitki, Güneş, Klorofil, Oksijen, Yaprak
+Kutup ışıkları: Aurora, Gökyüzü, Yeşil, Norveç, Kuzey
+Salyangoz: Kabuk, Yavaş, Sümüksü, Yağmur, Anten
+Baykuş: Gece, Hu hu, Bilge, Göz, Ötmek
+Ateş böceği: Işık, Gece, Parlamak, Yaz, Böcek
+Bataklık: Çamur, Su, Sivrisinek, Batmak, Kurbağa
+Gelgit: Ay, Deniz, Çekilmek, Kabarmak, Okyanus
+Çita: Hızlı, Kedi, Benek, Afrika, Koşmak
+Vaşak: Kulak, Püskül, Yabani, Kedi, Orman
+Ornitorenk: Gagalı, Memeli, Yumurta, Avustralya, Garip
+Koala: Avustralya, Okaliptüs, Ağaç, Uyumak, Ayı
+Tembel hayvan: Yavaş, Ağaç, Asılı, Uyku, Güney Amerika
+Armadillo: Kabuk, Top, Zırh, Amerika, Memeli
+Akbaba: Leş, Kuş, Çöl, Kel, Yırtıcı
+Pelikan: Gaga, Kese, Balık, Kuş, Büyük
+Mors: Diş, Buz, Bıyık, Kutup, Fok
+Fok: Buz, Kutup, Yüzgeç, Balık, Alkış
+Sırtlan: Gülmek, Leş, Afrika, Sürü, Aslan
+Lemur: Madagaskar, Kuyruk, Göz, Maymun, Halka
+Sünger: Deniz, Delik, Emmek, Bob, Bulaşık
+Denizatı: Kıvrık, Kuyruk, Erkek, Hamile, Küçük
+Kalamar: Tava, Halka, Deniz ürünü, Mürekkep, Kol
+Plankton: Küçük, Okyanus, Balina, Besin, Su
+Ekosistem: Canlı, Denge, Çevre, Doğa, Zincir
+Besin zinciri: Avcı, Av, Yemek, Halka, Doğa
+Göç: Kuş, Güney, Mevsim, Sürü, Gitmek
+Kış uykusu: Ayı, Uyumak, Mağara, Soğuk, Bahar
+Kamuflaj: Gizlenmek, Renk, Asker, Bukalemun, Desen
+Metamorfoz: Tırtıl, Kelebek, Değişim, Kurbağa, Dönüşüm
+Tozlaşma: Arı, Çiçek, Polen, Meyve, Bitki
+Erozyon: Toprak, Aşınma, Rüzgar, Su, Ağaç
+Küresel ısınma: İklim, Sıcaklık, Buzul, Karbon, Dünya
+Ozon tabakası: Delik, Güneş, Atmosfer, Koruma, Ultraviyole
+Kanyon: Derin, Vadi, Nehir, Kaya, Grand
+Delta: Nehir, Deniz, Nil, Ağız, Üçgen
+Gayzer: Sıcak, Su, Fışkırmak, İzlanda, Yer altı
+Savan: Afrika, Otlak, Aslan, Kurak, Zürafa
+Tundra: Soğuk, Buz, Kuzey, Ağaçsız, Rusya
+Muson: Yağmur, Rüzgar, Hindistan, Mevsim, Asya
+Kasırga: Rüzgar, Fırtına, Dönmek, Okyanus, İsim
+Meteor: Kayan yıldız, Gökyüzü, Taş, Düşmek, Dilek
+Çam: Ağaç, Yeşil, Yılbaşı, Kozalak, İğne`],
+
+            spor: [`
+Futbol: Top, Gol, Maç, Kale, Takım
+Basketbol: Pota, Top, Smaç, NBA, Uzun
+Yüzme: Havuz, Su, Kulaç, Deniz, Mayo
+Bisiklet: Pedal, Tekerlek, Sürmek, Zincir, Kask
+Satranç: Şah, Mat, Piyon, Tahta, Vezir
+Tavla: Zar, Pul, Kahvehane, Şeşbeş, Mars
+Voleybol: File, Smaç, Pasör, Top, Plaj
+Balon: Şişirmek, Patlamak, Hava, Doğum günü, Renkli
+Kamp: Çadır, Doğa, Ateş, Uyku tulumu, Orman
+Piknik: Park, Örtü, Mangal, Çimen, Sepet
+Saklambaç: Sobe, Saymak, Ebe, Çocuk, Gizlenmek
+Koşu: Hızlı, Maraton, Ayakkabı, Parkur, Nefes
+Tenis: Raket, File, Kort, Top, Servis
+Doğum günü: Pasta, Mum, Hediye, Yaş, Kutlama
+Karaoke: Şarkı, Mikrofon, Söylemek, Ekran, Bar
+Gol: Top, Ağlar, Futbol, Kale, Sevinç
+Kaleci: Eldiven, Tutmak, Kurtarış, Futbol, Penaltı
+Top: Yuvarlak, Futbol, Atmak, Zıplamak, Oyun
+Hentbol: El, Top, Kale, Takım, Atmak
+Masa tenisi: Pinpon, Raket, File, Küçük, Çin
+Salıncak: Park, Çocuk, Sallanmak, Zincir, İtmek
+Kaydırak: Park, Kaymak, Çocuk, Merdiven, Havuz
+Uçurtma: Rüzgar, İp, Uçmak, Bayram, Kağıt
+Bilye: Cam, Misket, Yuvarlak, Çocuk, Oyun
+İp atlama: Zıplamak, Çocuk, Spor, Sallamak, Teneffüs
+İskambil: Kart, Maça, Kupa, Oyun, Deste
+Zar: Tavla, Atmak, Altı, Küp, Şans
+Bulmaca: Kare, Gazete, Soldan sağa, Kelime, Çözmek
+Futbolcu: Top, Maç, Forma, Takım, Transfer
+Forma: Numara, Takım, Tişört, Futbol, Giymek
+Taraftar: Tribün, Takım, Destek, Bağırmak, Atkı
+Madalya: Altın, Gümüş, Bronz, Boyun, Kazanmak
+Kupa: Şampiyon, Kaldırmak, Ödül, Final, Altın
+Antrenman: Çalışmak, Hoca, Spor, Saha, Hazırlık
+Spor salonu: Ağırlık, Fitness, Koşu bandı, Kas, Üyelik
+Koşu bandı: Yürümek, Elektrikli, Hız, Kalori, Salon
+Evcilik: Çocuk, Oyun, Anne, Baba, Oyuncak
+Oyuncak: Çocuk, Bebek, Araba, Oynamak, Hediye
+Körebe: Göz, Bağlamak, Oyun, Çocuk, Yakalamak
+Tombala: Numara, Yılbaşı, Kart, Çinko, Torba
+Seksek: Tebeşir, Zıplamak, Kare, Taş, Çocuk
+Paten: Tekerlek, Buz, Kaymak, Ayakkabı, Pist
+Kızak: Kar, Kaymak, Tepe, Kış, Noel Baba
+Kardan adam: Kömür, Havuç, Burun, Kış, Yapmak
+Balık tutmak: Olta, Göl, Deniz, Yem, Sabır
+Havuz: Su, Yüzmek, Mayo, Otel, Atlamak
+Yarış: Birinci, Hız, Bitiş, Kazanmak, Koşmak
+Şampiyon: Birinci, Kupa, Kazanmak, Lig, Madalya`, `
+Maraton: Koşu, Kilometre, Yarış, Uzun, Atlet
+Bowling: Lobut, Top, Strike, Kanal, Salon
+Okey: Taş, Istaka, Dört, Joker, Masa
+Penaltı: Futbol, Kaleci, Gol, Faul, Nokta
+Kayak: Kar, Dağ, Pist, Baton, Uludağ
+Sörf: Dalga, Tahta, Deniz, Kaymak, Hawaii
+Boks: Eldiven, Ring, Yumruk, Nakavt, Maç
+Güreş: Yağlı, Kırkpınar, Minder, Pehlivan, Tuş
+Olimpiyat: Madalya, Altın, Halka, Dört yıl, Oyunlar
+Hakem: Düdük, Kart, Maç, Karar, Ofsayt
+Lunapark: Dönme dolap, Eğlence, Bilet, Çarpışan araba, Pamuk şeker
+Yapboz: Parça, Puzzle, Resim, Birleştirmek, Kenar
+Dart: Ok, Tahta, Hedef, Atmak, Bar
+Bilardo: Istaka, Masa, Top, Delik, Beyaz
+Sirk: Palyaço, Çadır, Akrobat, Hayvan, Gösteri
+Korner: Köşe, Bayrak, Futbol, Vuruş, Kale
+Faul: Kural, Hakem, Düdük, Serbest vuruş, Kart
+Kırmızı kart: Hakem, Oyundan atılmak, Futbol, Ceza, Sarı
+Derbi: Maç, Rakip, Galatasaray, Fenerbahçe, Şehir
+Transfer: Futbolcu, Takım, Para, Sezon, Kulüp
+Teknik direktör: Hoca, Takım, Taktik, Kenar, Futbol
+Smaç: Basketbol, Pota, Zıplamak, Voleybol, Vurmak
+Üç sayı: Basketbol, Çizgi, Atış, Uzak, Pota
+Serbest atış: Basketbol, Faul, Çizgi, Pota, Sayı
+Uzatma: Maç, Süre, Dakika, Berabere, Penaltı
+Devre arası: Maç, Mola, Soyunma odası, Yarı, On beş dakika
+Tribün: Taraftar, Stadyum, Oturmak, Seyirci, Bağırmak
+Lig: Puan, Sezon, Takım, Süper, Şampiyon
+Kramp: Kas, Ağrı, Bacak, Sporcu, Kasılmak
+Isınma: Hareket, Antrenman, Maç öncesi, Esneme, Kas
+Şınav: Kol, Yer, Spor, Kalkmak, Kas
+Mekik: Karın, Spor, Kalkmak, Yatmak, Kas
+Halter: Ağırlık, Kaldırmak, Olimpiyat, Kas, Bar
+Cirit: Mızrak, At, Atmak, Türk, Geleneksel
+Okçuluk: Olimpiyat, Yay, Hedef, Nişan, Robin Hood
+Kano: Kürek, Nehir, Tekne, Göl, Kürekçi
+Yelken: Rüzgar, Tekne, Deniz, Direk, Bez
+Formula 1: Araba, Yarış, Pist, Pilot, Hızlı
+Ralli: Araba, Yarış, Toprak, Çamur, Pilot
+Adam asmaca: Harf, Kelime, Tahmin, Çizmek, İdam
+Sessiz sinema: Film, Anlatmak, Konuşmamak, El kol, Tahmin
+Taş kağıt makas: El, Oyun, Kazanmak, Üç, Aynı anda
+Dama: Tahta, Taş, Siyah beyaz, Yemek, Satranç
+Mangala: Taş, Çukur, Tahta, Türk, Zeka
+Rubik küpü: Renk, Çevirmek, Altı, Yüz, Zeka
+Langırt: Masa, Futbol, Çevirmek, Top, Kafe
+Video oyunu: Konsol, Bilgisayar, Kol, Level, Ekran
+Karting: Araba, Pist, Küçük, Yarış, Kask`, `
+Ofsayt: Hakem, Futbol, Çizgi, Bayrak, Kural
+Triatlon: Yüzme, Bisiklet, Koşu, Üç, Dayanıklılık
+Eskrim: Kılıç, Maske, Beyaz, Dokunmak, Düello
+Paraşüt: Uçak, Atlamak, Gökyüzü, Açılmak, Serbest düşüş
+Hat-trick: Üç, Gol, Futbolcu, Maç, Top
+Sudoku: Rakam, Kare, Dokuz, Bulmaca, Mantık
+Yoga: Esneme, Nefes, Mat, Hindistan, Meditasyon
+Dalış: Oksijen, Tüp, Deniz, Mercan, Maske
+Rafting: Nehir, Bot, Kürek, Akıntı, Köprülü Kanyon
+Kaykay: Tekerlek, Tahta, Rampa, Kaymak, Genç
+Poker: Kart, Blöf, Fiş, Kumar, Masa
+Tırmanış: Kaya, Dağ, Halat, Duvar, Zirve
+Golf: Delik, Sopa, Top, Çim, Zengin
+Maskot: Takım, Kostüm, Sembol, Stadyum, Şans
+Bungee jumping: Köprü, Atlamak, İp, Adrenalin, Yüksek
+VAR: Video, Hakem, Kontrol, Ofsayt, Ekran
+Frikik: Serbest vuruş, Baraj, Futbol, Kale, Faul
+Baraj: Frikik, Duvar, Futbol, Oyuncu, Su
+Rövaşata: Makas, Ters, Gol, Havada, Futbol
+Kontra atak: Hızlı, Hücum, Savunma, Futbol, Karşı
+Libero: Voleybol, Savunma, Forma, Renkli, Pasör
+Dekatlon: On, Atletizm, Branş, Olimpiyat, Yarış
+Sırıkla atlama: Çubuk, Yüksek, Atletizm, Esnek, Çıta
+Curling: Buz, Taş, Süpürge, Kaydırmak, Kış olimpiyatı
+Kriket: İngiliz, Sopa, Top, Hindistan, Kale
+Beyzbol: Sopa, Amerikan, Top, Eldiven, Koşu
+Amerikan futbolu: Oval, Top, Kask, Touchdown, Super Bowl
+Rugby: Oval, Top, İngiliz, Sert, Mücadele
+Su topu: Havuz, Polo, Takım, Yüzmek, Kale
+Polo: At, Sopa, Top, Zengin, Tişört
+Sumo: Japon, Güreş, Şişman, Halka, Pehlivan
+Judo: Japon, Kimono, Kuşak, Dövüş, Atmak
+Tekvando: Kore, Tekme, Kuşak, Dövüş, Olimpiyat
+Karate: Japon, Kuşak, Tekme, Kiai, Dövüş
+Parkur: Atlamak, Duvar, Şehir, Koşmak, Engel
+Rok: Satranç, Şah, Kale, Yer değiştirmek, Hamle
+Şah mat: Satranç, Bitirmek, Kral, Kazanmak, Hamle
+Blöf: Poker, Yalan, Kandırmak, Kart, Rol
+Jokey: At, Yarış, Binici, Küçük, Hipodrom
+Hipodrom: At, Yarış, Bahis, Pist, Jokey
+Bahis: Kupon, Maç, Para, Tahmin, Oran
+Yarı final: Dörtlü, Eleme, Turnuva, Maç, İki
+Turnuva: Eleme, Takım, Kupa, Final, Organizasyon
+Fair play: Centilmenlik, Kural, Dürüst, Saygı, Spor
+Doping: İlaç, Sporcu, Yasak, Test, Hile
+Kondisyon: Dayanıklılık, Nefes, Form, Spor, Güç
+Kitesurf: Uçurtma, Sörf, Rüzgar, Deniz, Tahta
+E-spor: Oyun, Bilgisayar, Turnuva, Oyuncu, Yayın`],
+
+            gunluk: [`
+Telefon: Aramak, Mobil, Ekran, Mesaj, Akıllı
+Doktor: Hastane, Hasta, İlaç, Muayene, Hekim
+Öğretmen: Okul, Ders, Öğrenci, Sınıf, Hoca
+Polis: Suç, Karakol, Hırsız, Kelepçe, Üniforma
+Yastık: Uyumak, Yatak, Baş, Kılıf, Yumuşak
+Ayna: Yansıma, Cam, Bakmak, Görüntü, Makyaj
+Anahtar: Kapı, Kilit, Açmak, Çilingir, Ev
+Saat: Zaman, Dakika, Kol, Akrep, Yelkovan
+Diş fırçası: Macun, Sabah, Ağız, Temizlemek, Banyo
+Buzdolabı: Soğuk, Mutfak, Yiyecek, Dondurucu, Beyaz eşya
+Kalem: Yazmak, Kağıt, Kurşun, Silgi, Mürekkep
+Market: Alışveriş, Kasa, Sepet, Raf, Bakkal
+Gözlük: Lens, Cam, Görmek, Numara, Çerçeve
+Otobüs: Durak, Şoför, Yolcu, Bilet, Toplu taşıma
+Şemsiye: Yağmur, Açmak, Islanmak, Sap, Kapatmak
+Yatak: Uyumak, Yastık, Yorgan, Çarşaf, Oda
+Sandalye: Oturmak, Masa, Dört ayak, Mobilya, Koltuk
+Masa: Sandalye, Yemek, Ayak, Mobilya, Üstü
+Kapı: Açmak, Kapatmak, Anahtar, Zil, Kolu
+Pencere: Cam, Perde, Açmak, Manzara, Kapı
+Çanta: Sırt, Taşımak, Okul, Kadın, Fermuar
+Ayakkabı: Topuk, Bağcık, Giymek, Numara, Çorap
+Çorap: Ayak, Çift, Giymek, Ayakkabı, Delik
+Diş macunu: Fırça, Tüp, Nane, Sabah, Beyaz
+Sabun: Köpük, El, Yıkamak, Banyo, Kalıp
+Havlu: Kurulamak, Banyo, Plaj, Pamuklu, Islak
+Tarak: Saç, Taramak, Diş, Ayna, Fırça
+Makas: Kesmek, Kağıt, Kuaför, Keskin, İki
+Silgi: Kalem, Silmek, Hata, Kurşun, Lastik
+Defter: Yazmak, Sayfa, Okul, Kalem, Çizgili
+Öğrenci: Okul, Ders, Sınıf, Öğretmen, Karne
+Hemşire: Hastane, İğne, Doktor, Hasta, Beyaz
+Şoför: Araba, Sürmek, Direksiyon, Otobüs, Ehliyet
+Postacı: Mektup, PTT, Kargo, Zarf, Kapı
+Fırıncı: Ekmek, Somun, Sabah, Un, Simit
+Çiftçi: Tarla, Traktör, Köy, Ekin, Hayvan
+Pilot: Uçak, Kokpit, Uçmak, Kaptan, Havalimanı
+Asker: Ordu, Silah, Vatan, Üniforma, Nöbet
+Bebek: Ağlamak, Emzik, Küçük, Anne, Bez
+Anne: Baba, Çocuk, Kadın, Doğurmak, Sevgi
+Baba: Anne, Çocuk, Erkek, Aile, Bıyık
+Dede: Torun, Yaşlı, Baston, Nine, Baba
+Kardeş: Abla, Abi, Aynı anne, Aile, Küçük
+Ev: Oda, Çatı, Yaşamak, Kapı, Apartman
+Mutfak: Yemek, Ocak, Tencere, Buzdolabı, Pişirmek
+Banyo: Duş, Küvet, Tuvalet, Yıkanmak, Havlu
+Balkon: Dışarı, Ev, Çiçek, Çamaşır, Manzara
+Kumanda: Televizyon, Kanal, Tuş, Pil, Kaybolmak
+Ütü: Kıyafet, Buruşuk, Sıcak, Düzeltmek, Masa`, `
+Ambulans: Hastane, Siren, Acil, 112, Sedye
+Berber: Saç, Sakal, Makas, Tıraş, Ustura
+Aşçı: Mutfak, Yemek, Şef, Tencere, Restoran
+İtfaiye: Yangın, Ateş, Hortum, Merdiven, 110
+Pasaport: Yurt dışı, Vize, Seyahat, Kimlik, Gümrük
+Düğün: Gelin, Damat, Evlenmek, Nikah, Halay
+Bayram: Tatil, Şeker, El öpmek, Harçlık, Kurban
+Çamaşır makinesi: Yıkamak, Deterjan, Kıyafet, Sıkma, Beyaz eşya
+Asansör: Kat, Düğme, Yukarı, Bina, Merdiven
+Kargo: Paket, Kurye, Teslimat, Göndermek, Takip
+Taksi: Sarı, Durak, Şoför, Yolcu, Korna
+Pijama: Uyku, Gece, Yatak, Kıyafet, Rahat
+Maaş: Ay, Para, İş, Ödemek, Banka
+Hamam: Kese, Köpük, Terlemek, Türk, Yıkanmak
+Komşu: Kapı, Yan, Apartman, Ev, Şeker istemek
+Elektrikçi: Kablo, Priz, Sigorta, Usta, Ampul
+Marangoz: Tahta, Mobilya, Testere, Usta, Rende
+Terzi: Dikiş, Kumaş, Ölçü, Makine, Elbise
+Eczacı: İlaç, Reçete, Eczane, Nöbetçi, Önlük
+Dişçi: Dentist, Dolgu, Çekmek, Koltuk, Ağrı
+Gazeteci: Haber, Muhabir, Kamera, Röportaj, Yazmak
+Mühendis: Hesap, Proje, Makine, İnşaat, Üniversite
+Kasiyer: Market, Kasa, Para, Fiş, Ödeme
+Kasap: Et, Bıçak, Kıyma, Önlük, Dükkan
+Bekçi: Gece, Düdük, Mahalle, Nöbet, Sopa
+Güvenlik görevlisi: Kapı, Kontrol, Bina, Üniforma, X-ray
+Psikolog: Terapi, Konuşmak, Ruh, Seans, Koltuk
+Manav: Meyve, Sebze, Pazar, Dükkan, Tezgah
+Bakkal: Mahalle, Dükkan, Market, Veresiye, Ekmek
+Pazar: Tezgah, Sebze, Meyve, Hafta sonu, Semt
+Pazarlık: İndirim, Fiyat, Ucuz, Satıcı, Anlaşmak
+İndirim: Ucuz, Kampanya, Yüzde, Fiyat, Mağaza
+Fatura: Elektrik, Su, Ödemek, Ay, Doğalgaz
+Banka: Para, Hesap, Kredi, ATM, Faiz
+ATM: Para çekmek, Kart, Şifre, Banka, Makine
+Ehliyet: Araba, Sınav, Kurs, Sürmek, Kimlik
+Trafik: Araba, Sıkışık, Işık, Kavşak, Polis
+Trafik ışığı: Kırmızı, Yeşil, Sarı, Durmak, Kavşak
+Otopark: Araba, Park etmek, Ücret, Yer, Katlı
+Benzin istasyonu: Yakıt, Pompa, Araba, Depo, Mazot
+Randevu: Saat, Doktor, Buluşma, Ayarlamak, Tarih
+Nöbetçi eczane: Gece, İlaç, Açık, Tabela, Pazar
+Nişan: Yüzük, Evlilik, Söz, Tören, Takmak
+Kına gecesi: Gelin, Kırmızı, Ağlamak, Düğün, El
+Sünnet: Çocuk, Düğün, Kıyafet, Erkek, Maşallah
+Taşınmak: Ev, Kamyon, Koli, Nakliye, Yeni
+Temizlik: Süpürge, Toz, Deterjan, Silmek, Ev
+Bulaşık makinesi: Tabak, Yıkamak, Mutfak, Tablet, Deterjan
+Süpürge: Toz, Elektrik, Halı, Çekmek, Cadı`, `
+Avukat: Mahkeme, Dava, Hukuk, Hakim, Savunmak
+Kira: Ev, Aylık, Ev sahibi, Ödemek, Depozito
+Emlakçı: Ev, Satmak, Kiralık, Komisyon, Daire
+Noter: Belge, İmza, Onay, Resmi, Vekaletname
+Mimar: Bina, Çizim, Proje, Tasarım, İnşaat
+Veteriner: Hayvan, Doktor, Kedi, Köpek, Aşı
+Muhtar: Mahalle, Seçim, İkametgah, Köy, Kahve
+Vergi: Devlet, Ödemek, Maliye, Beyanname, Gelir
+Garson: Restoran, Sipariş, Bahşiş, Tepsi, Masa
+Kuaför: Saç, Boya, Fön, Kesim, Makas
+Tesisatçı: Su, Boru, Musluk, Kaçak, Usta
+Stajyer: Öğrenci, İş, Deneyim, Yeni, Maaşsız
+Mesai: İş, Saat, Fazla, Çalışmak, Ofis
+Kredi kartı: Banka, Borç, Ödemek, Limit, Şifre
+Kapıcı: Apartman, Ekmek, Çöp, Bina, Bodrum
+Sosyal medya: Instagram, Paylaşım, Takipçi, Beğeni, Hesap
+Takipçi: Sosyal medya, Hesap, Fenomen, Sayı, Profil
+Fenomen: Sosyal medya, Ünlü, Takipçi, Reklam, Influencer
+Podcast: Dinlemek, Bölüm, Sohbet, Kulaklık, Yayın
+Abonelik: Aylık, Ücret, Netflix, İptal, Üyelik
+Uzaktan çalışma: Ev, Bilgisayar, Ofis, Toplantı, Online
+Toplantı: Ofis, Masa, Konuşmak, Zoom, Sunum
+Mülakat: İş, Görüşme, CV, Soru, Başvuru
+Özgeçmiş: CV, İş, Başvuru, Deneyim, Eğitim
+İstifa: İş, Bırakmak, Dilekçe, Patron, Ayrılmak
+Emeklilik: Yaşlı, Maaş, İş, Bırakmak, Prim
+Sigorta: Poliçe, Kaza, Kasko, Hastane, Prim
+Kasko: Araba, Sigorta, Kaza, Poliçe, Hasar
+Kredi: Banka, Borç, Faiz, Taksit, Ödemek
+Taksit: Kredi kartı, Ay, Bölmek, Ödeme, Peşin
+Faiz: Banka, Yüzde, Kredi, Para, Oran
+Enflasyon: Fiyat, Zam, Para, Ekonomi, Artış
+Zam: Fiyat, Artmak, Benzin, Maaş, Enflasyon
+Döviz: Dolar, Euro, Kur, Para, Bozdurmak
+Borsa: Hisse, Yatırım, Para, Düşmek, Yükselmek
+Dilekçe: Resmi, Yazı, Başvuru, İmza, Kurum
+E-devlet: Şifre, İnternet, Resmi, Belge, Kimlik
+Nüfus cüzdanı: Kimlik, Kart, Resmi, Numara, Fotoğraf
+İkametgah: Adres, Belge, Muhtar, Oturmak, Resmi
+Askerlik: Vatan, Erkek, Tezkere, Yemin, Kışla
+Tezkere: Askerlik, Bitmek, Asker, Belge, Şafak
+Yurt: Öğrenci, Oda, Ranza, Üniversite, Kalmak
+Ranza: Yatak, İki katlı, Üst, Yurt, Kardeş
+Her şey dahil: Otel, Tatil, Yemek, İçki, Sınırsız
+Vize: Pasaport, Konsolosluk, Yurt dışı, Başvuru, Schengen
+Gümrük: Sınır, Vergi, Havalimanı, Kontrol, Eşya
+Karne: Not, Okul, Tatil, Takdir, Teşekkür
+Veli toplantısı: Anne, Baba, Öğretmen, Okul, Çocuk`],
+
+            kultur: [`
+Sinema: Film, Perde, Mısır, Bilet, Salon
+Kitap: Okumak, Sayfa, Yazar, Kütüphane, Roman
+Gitar: Tel, Müzik, Çalmak, Enstrüman, Akor
+Müze: Tarih, Sergi, Eser, Gezmek, Tablo
+Korku: Korkmak, Film, Kabus, Çığlık, Hayalet
+Vampir: Kan, Diş, Drakula, Gece, Sarımsak
+Kral: Taç, Saray, Prens, Taht, Hükümdar
+Masal: Çocuk, Bir varmış, Prenses, Hikaye, Uyumak
+Piyano: Tuş, Siyah beyaz, Çalmak, Müzik, Kuyruklu
+Resim: Boya, Fırça, Tablo, Ressam, Tuval
+Palyaço: Sirk, Burun, Kırmızı, Güldürmek, Makyaj
+Şarkı: Söylemek, Müzik, Söz, Nakarat, Melodi
+Dans: Müzik, Ritim, Adım, Pist, Salsa
+Tiyatro: Sahne, Oyuncu, Perde, Seyirci, Oyun
+Konser: Müzik, Sahne, Bilet, Şarkıcı, Kalabalık
+Davul: Zurna, Vurmak, Bayram, Ramazan, Tokmak
+Keman: Yay, Tel, Çalmak, Klasik, Çene
+Flüt: Üflemek, Delik, Müzik, Kaval, Enstrüman
+Mikrofon: Ses, Şarkıcı, Konuşmak, Sahne, Kablo
+Kulaklık: Müzik, Dinlemek, Kablo, Kablosuz, Ses
+Film: Sinema, Oyuncu, Yönetmen, İzlemek, Seyretmek
+Çizgi film: Animasyon, Çocuk, Televizyon, Karakter, Çizmek
+Prenses: Kral, Masal, Taç, Saray, Külkedisi
+Cadı: Süpürge, Büyü, Masal, Şapka, Kazan
+Peri: Kanat, Masal, Değnek, Küçük, Dilek
+Dev: Büyük, Masal, Uzun, Cüce, Güçlü
+Cüce: Küçük, Pamuk Prenses, Yedi, Kısa, Masal
+Sihirbaz: Şapka, Tavşan, Büyü, Değnek, Gösteri
+Ressam: Resim, Fırça, Boya, Tablo, Sanatçı
+Şarkıcı: Konser, Ses, Sahne, Albüm, Mikrofon
+Oyuncu: Film, Dizi, Rol, Sahne, Aktör
+Yazar: Kitap, Yazmak, Roman, Kalem, İmza
+Roman: Kitap, Yazar, Uzun, Hikaye, Sayfa
+Gazete: Haber, Sabah, Okumak, Manşet, Kağıt
+Dergi: Sayfa, Aylık, Kapak, Magazin, Okumak
+Tablo: Resim, Duvar, Çerçeve, Ressam, Müze
+Fotoğraf: Kamera, Çekmek, Albüm, Poz, Anı
+Alkış: El, Çırpmak, Seyirci, Tebrik, Sahne
+Sahne: Tiyatro, Konser, Oyuncu, Perde, Işık
+Kostüm: Kıyafet, Parti, Tiyatro, Cadılar Bayramı, Giymek
+Maske: Yüz, Takmak, Gizlemek, Karnaval, Kostüm
+Balo: Dans, Gece, Elbise, Prenses, Külkedisi
+Hikaye: Anlatmak, Masal, Kitap, Bir varmış, Olay
+Bilmece: Soru, Cevap, Tahmin, Çocuk, Zeka
+Fıkra: Gülmek, Temel, Espri, Anlatmak, Komik
+Şaka: Gülmek, Espri, Komik, Nisan, Kandırmak
+Sanat: Resim, Müzik, Müze, Eser, Güzel
+Çizim: Kalem, Kağıt, Resim, Karakalem, Eskiz`, `
+Robot: Makine, Yapay zeka, Metal, İnsan, Otomatik
+Süper kahraman: Pelerin, Güç, Kötü adam, Kurtarmak, Maske
+Korsan: Gemi, Hazine, Göz bandı, Papağan, Kaptan
+Hayalet: Ruh, Korku, Beyaz, Görünmez, Ev
+Heykel: Taş, Mermer, Yontmak, Sanat, Müze
+Opera: Şarkı, Soprano, Sahne, İtalyan, Klasik
+Belgesel: Film, Gerçek, Doğa, Anlatıcı, Bilgi
+Dizi: Bölüm, Sezon, Televizyon, Oyuncu, Final
+Şiir: Şair, Kafiye, Dize, Yazmak, Okumak
+Bale: Dans, Parmak ucu, Tütü, Kuğu Gölü, Klasik
+Mumya: Mısır, Firavun, Sargı, Piramit, Lanet
+Ejderha: Ateş, Kanat, Masal, Pul, Uçmak
+Karagöz: Hacivat, Gölge, Perde, Kukla, Oyun
+Nasreddin Hoca: Eşek, Akşehir, Fıkra, Kavuk, Göl
+Oscar: Ödül, Film, Heykelcik, Hollywood, Oyuncu
+Bağlama: Saz, Tel, Türkü, Halk müziği, Mızrap
+Türkü: Halk, Bağlama, Anonim, Şarkı, Yöresel
+Halay: Düğün, Dans, Mendil, Davul, Zurna
+Zeybek: Ege, Dans, Efe, Ağır, Kollar
+Horon: Karadeniz, Dans, Kemençe, Titremek, Hızlı
+Arabesk: Hüzün, Müzik, Acı, Dert, Şarkı
+Pop müzik: Şarkı, Popüler, Hit, Dans, Klip
+Rock: Gitar, Müzik, Sert, Davul, Konser
+Klip: Video, Şarkı, Çekim, Müzik, YouTube
+Albüm: Şarkı, Kapak, Çıkarmak, Müzik, Fotoğraf
+Festival: Konser, Açık hava, Çadır, Bilet, Kalabalık
+Sergi: Galeri, Eser, Resim, Müze, Açılış
+Galeri: Sergi, Sanat, Resim, Salon, Araba
+Heykeltıraş: Taş, Yontmak, Mermer, Sanatçı, Keski
+Yönetmen: Film, Kamera, Sahne, Motor, Oyuncu
+Dublör: Tehlikeli, Film, Sahne, Aksiyon, Yerine
+Senarist: Senaryo, Yazmak, Film, Dizi, Diyalog
+Kamera arkası: Çekim, Film, Görüntü, Hata, Set
+Fragman: Film, Tanıtım, Kısa, Vizyon, İzlemek
+Vizyon: Sinema, Film, Yeni, Gösterim, Hafta
+Altyazı: Film, Yabancı, Çeviri, Dizi, Okumak
+Dublaj: Ses, Film, Çizgi film, Türkçe, Seslendirme
+Pembe dizi: Aşk, Gözyaşı, Televizyon, Bölüm, Uzun
+Reality şov: Televizyon, Yarışma, Gerçek, Kamera, Ev
+Yarışma programı: Soru, Para, Sunucu, Televizyon, Kazanmak
+Sunucu: Program, Televizyon, Mikrofon, Konuşmak, Yarışma
+Komedi: Gülmek, Film, Komik, Espri, Stand-up
+Stand-up: Sahne, Mikrofon, Komik, Tek kişi, Espri
+Dram: Film, Ağlamak, Duygusal, Tiyatro, Acı
+Western: Kovboy, At, Silah, Amerika, Çöl
+Bilim kurgu: Uzay, Gelecek, Film, Robot, Uzaylı
+Distopya: Gelecek, Kötü, Toplum, Roman, Karanlık
+Efsane: Hikaye, Eski, Kahraman, Anlatı, Mitoloji`, `
+Rönesans: İtalya, Sanat, Yeniden doğuş, Avrupa, Da Vinci
+Mozaik: Taş, Parça, Zeugma, Renkli, Duvar
+Senaryo: Film, Yazmak, Diyalog, Yönetmen, Metin
+Orkestra: Şef, Müzik, Senfoni, Enstrüman, Konser
+Mitoloji: Tanrı, Yunan, Efsane, Zeus, Hikaye
+Ebru: Su, Boya, Kağıt, Desen, Geleneksel
+Hat sanatı: Yazı, Kalem, Arap, Güzel, Mürekkep
+Rap: Şarkı, Ritim, Söz, Hızlı, Hip hop
+Sürrealizm: Dali, Rüya, Akım, Gerçeküstü, Resim
+Minyatür: Küçük, Osmanlı, Resim, Nakkaş, Kitap
+Soytarı: Saray, Kral, Güldürmek, Şapka, Çan
+Otobiyografi: Hayat, Kitap, Kendi, Yazmak, Anı
+Caz: Müzik, Saksafon, Doğaçlama, New Orleans, Blues
+Kukla: İp, Oynatmak, Tahta, Çocuk, Pinokyo
+Meddah: Hikaye, Anlatmak, Mendil, Sopa, Kahvehane
+Barok: Sanat, Avrupa, Süslü, Müzik, Dönem
+Kübizm: Picasso, Küp, Resim, Akım, Geometrik
+Empresyonizm: Monet, İzlenim, Resim, Akım, Işık
+Pop art: Warhol, Renkli, Konserve, Akım, Tekrar
+Grafiti: Duvar, Sprey, Sokak, Boya, Yazı
+Kaligrafi: Yazı, Güzel, Kalem, Harf, Mürekkep
+Tuval: Resim, Boya, Ressam, Şövale, Bez
+Şövale: Tuval, Ressam, Üç ayak, Resim, Sehpa
+Fresk: Duvar, Resim, Kilise, Tavan, Sıva
+Vitray: Cam, Renkli, Pencere, Kilise, Işık
+Ney: Mevlevi, Üflemek, Kamış, Tasavvuf, Flüt
+Sema: Mevlana, Dönmek, Derviş, Konya, Tennure
+Kemençe: Karadeniz, Horon, Yay, Tel, Çalmak
+Ud: Tel, Armut, Mızrap, Arap, Enstrüman
+Kanun: Tel, Kucak, Mızrap, Enstrüman, Yasa
+Senfoni: Orkestra, Beethoven, Klasik, Bölüm, Müzik
+Beste: Müzik, Nota, Yazmak, Melodi, Eser
+Nota: Do re mi, Porte, Müzik, Kağıt, Ses
+Akort: Tel, Ayar, Gitar, Ses, Bozuk
+Tenor: Opera, Erkek, Tiz, Şarkıcı, Pavarotti
+Haiku: Japon, Şiir, Kısa, Üç, Hece
+Destan: Kahraman, Uzun, Şiir, Efsane, Dede Korkut
+Mesnevi: Mevlana, Şiir, Beyit, Uzun, Eser
+Divan edebiyatı: Osmanlı, Şiir, Aruz, Gazel, Saray
+Aruz: Ölçü, Divan, Hece, Şiir, Uzun
+Kafiye: Şiir, Uyak, Ses, Son, Benzerlik
+Anekdot: Kısa, Hikaye, Gerçek, Anlatmak, Olay
+Parodi: Taklit, Komik, Dalga geçmek, Eser, Mizah
+Karikatür: Çizim, Mizah, Dergi, Abartı, Gazete
+Otoportre: Ressam, Kendi, Resim, Yüz, Selfie
+Natürmort: Resim, Meyve, Vazo, Cansız, Masa
+Monolog: Tek, Konuşmak, Tiyatro, Oyuncu, Sahne
+Epilog: Son, Kitap, Bölüm, Sonsöz, Film`],
+
+            bilim: [`
+Bilgisayar: Klavye, Ekran, Fare, İnternet, Laptop
+Ay: Gece, Işık, Uzay, Hilal, Dünya
+Uçak: Havalimanı, Pilot, Uçmak, Kanat, Bilet
+Televizyon: Kanal, Kumanda, Ekran, İzlemek, Dizi
+Selfie: Fotoğraf, Telefon, Kendi, Poz, Kamera
+Mıknatıs: Çekmek, Demir, Kutup, Buzdolabı, Manyetik
+Roket: Uzay, Fırlatmak, Astronot, NASA, Yakıt
+İnternet: Wifi, Web, Bağlantı, Modem, Site
+Pil: Enerji, Şarj, Artı, Eksi, Kumanda
+Ampul: Işık, Edison, Lamba, Elektrik, Yanmak
+Kamera: Fotoğraf, Çekmek, Lens, Video, Deklanşör
+Oyun konsolu: Joystick, Playstation, Xbox, Televizyon, Kol
+Şarj aleti: Telefon, Kablo, Priz, Pil, Doldurmak
+Termometre: Ateş, Derece, Ölçmek, Sıcaklık, Hasta
+Mikroskop: Büyütmek, Küçük, Laboratuvar, Hücre, Lens
+Araba: Tekerlek, Sürmek, Motor, Direksiyon, Benzin
+Tren: Ray, Vagon, İstasyon, Lokomotif, Bilet
+Gemi: Deniz, Kaptan, Liman, Yolcu, Batmak
+Helikopter: Pervane, Uçmak, Pilot, Dikey, Hava
+Denizaltı: Torpido, Su altı, Periskop, Batmak, Sarı
+Motosiklet: İki tekerlek, Kask, Motor, Hızlı, Kurye
+Klavye: Tuş, Harf, Bilgisayar, Yazmak, Fare
+Ekran: Görüntü, Televizyon, Telefon, Dokunmatik, Monitör
+Tablet: Ekran, Dokunmatik, iPad, İlaç, Taşınabilir
+Hoparlör: Ses, Müzik, Yüksek, Bluetooth, Bas
+Lamba: Işık, Ampul, Masa, Yakmak, Gece
+Priz: Fiş, Elektrik, Duvar, Takmak, Çarpmak
+Elektrik: Akım, Priz, Kablo, Fatura, Kesinti
+Kablo: Tel, Elektrik, Şarj, Bağlamak, Uzun
+Fırın: Pişirmek, Sıcak, Ekmek, Kek, Mutfak
+Saç kurutma makinesi: Fön, Kuaför, Sıcak, Hava, Islak
+Mesaj: Yazmak, Telefon, SMS, WhatsApp, Göndermek
+E-posta: Mail, Gelen kutusu, Adres, Göndermek, İnternet
+Hesap makinesi: Toplama, Rakam, Matematik, Tuş, Sonuç
+Cetvel: Ölçmek, Santim, Çizgi, Düz, Okul
+Gezegen: Dünya, Mars, Güneş sistemi, Yörünge, Uzay
+Dünya: Gezegen, Yuvarlak, Mavi, Yaşamak, Kıta
+Mars: Kırmızı, Gezegen, Uzay, Elon Musk, Yaşam
+Uzay: Yıldız, Astronot, Boşluk, Galaksi, Roket
+Uzaylı: Yeşil, UFO, Başka gezegen, Yaratık, Anten
+UFO: Uzaylı, Uçan daire, Gökyüzü, Gizem, Işık
+Matematik: Sayı, Ders, Toplama, Problem, Hesap
+Laboratuvar: Deney, Tüp, Bilim, Önlük, Kimya
+Deney: Laboratuvar, Bilim, Test, Sonuç, Tüp
+Kilo: Tartı, Ağırlık, Gram, Diyet, Şişman
+Tartı: Kilo, Ölçmek, Banyo, Ağırlık, Terazi
+Buz: Soğuk, Su, Donmak, Küp, Erimek
+Buhar: Su, Sıcak, Gaz, Kaynamak, Duman`, `
+Astronot: Uzay, Roket, Ay, Kask, NASA
+Dinozor: Fosil, Soyu tükenmiş, T-Rex, Büyük, Jurassic
+Wifi: İnternet, Kablosuz, Şifre, Modem, Sinyal
+Yapay zeka: Robot, Bilgisayar, Akıllı, Öğrenmek, Algoritma
+Mikrodalga: Fırın, Isıtmak, Mutfak, Hızlı, Dakika
+Uydu: Uzay, Dünya, Yörünge, Sinyal, Anten
+Emoji: Gülen yüz, Mesaj, Telefon, Simge, Kalp
+Şifre: Gizli, Parola, Giriş, Hesap, Güvenlik
+Pusula: Kuzey, İbre, Yön, Mıknatıs, Harita
+Teleskop: Yıldız, Uzak, Gökyüzü, Mercek, Gözlem
+Kara delik: Uzay, Çekim, Işık, Yıldız, Karanlık
+DNA: Gen, Sarmal, Hücre, Kalıtım, Test
+Aşı: İğne, Hastalık, Bağışıklık, Doktor, Virüs
+Virüs: Hastalık, Bulaşıcı, Mikrop, Grip, Bilgisayar
+Drone: Uçmak, Kamera, Kumanda, Pervane, İnsansız
+Galaksi: Samanyolu, Yıldız, Uzay, Spiral, Evren
+Samanyolu: Galaksi, Yıldız, Gece, Süt, Uzay
+Evren: Uzay, Büyük patlama, Sonsuz, Her şey, Galaksi
+Büyük patlama: Evren, Başlangıç, Big Bang, Teori, Patlamak
+Mikrop: Hastalık, Bakteri, Temizlik, Küçük, Virüs
+Bakteri: Mikrop, Hücre, Küçük, Antibiyotik, Hastalık
+Antibiyotik: İlaç, Bakteri, Enfeksiyon, Doktor, Kür
+Hücre: Canlı, Çekirdek, Küçük, Biyoloji, Zar
+Kalp: Atmak, Organ, Kan, Aşk, Göğüs
+Beyin: Düşünmek, Kafa, Organ, Zeka, Nöron
+İskelet: Kemik, Vücut, Korku, Kafatası, Anatomi
+Kan: Kırmızı, Damar, Grup, Bağış, Kalp
+Röntgen: Kemik, Film, Hastane, Işın, Kırık
+Ameliyat: Doktor, Hastane, Neşter, Narkoz, Kesmek
+Hacker: Bilgisayar, Kırmak, Siber, Şifre, Kapüşon
+Bluetooth: Kablosuz, Bağlantı, Kulaklık, Eşleştirmek, Mavi
+QR kod: Kare, Okutmak, Kamera, Menü, Siyah beyaz
+Uygulama: Telefon, İndirmek, App Store, Program, Mobil
+Güncelleme: Yeni sürüm, İndirmek, Telefon, Yazılım, Yüklemek
+GPS: Konum, Harita, Uydu, Navigasyon, Yön
+Navigasyon: Yol, Harita, GPS, Tarif, Araba
+Güneş paneli: Enerji, Çatı, Elektrik, Yenilenebilir, Işık
+Rüzgar türbini: Elektrik, Pervane, Enerji, Yenilenebilir, Dönmek
+Elektrikli araba: Şarj, Batarya, Tesla, Benzinsiz, Sessiz
+3D yazıcı: Baskı, Plastik, Üç boyut, Model, Katman
+Barkod: Çizgi, Okuyucu, Market, Kasa, Ürün
+Parmak izi: El, Kimlik, Polis, Kilit, Benzersiz
+Yüz tanıma: Kamera, Telefon, Kilit, Güvenlik, Yapay zeka
+Kimya: Element, Deney, Tüp, Ders, Molekül
+Fizik: Newton, Kuvvet, Ders, Hareket, Einstein
+Biyoloji: Canlı, Hücre, Ders, Hayvan, Bitki
+Mikroçip: Küçük, Devre, Bilgisayar, İşlemci, Silikon
+Robot süpürge: Otomatik, Temizlik, Ev, Yuvarlak, Şarj`, `
+Yerçekimi: Newton, Elma, Düşmek, Kuvvet, Dünya
+Algoritma: Adım, Bilgisayar, Kod, Program, Çözüm
+Evrim: Darwin, Tür, Maymun, Değişim, Doğal seçilim
+Atom: Proton, Nötron, Elektron, Çekirdek, Küçük
+Blok zinciri: Kripto, Bitcoin, Veri, Güvenli, Dijital
+Hologram: Üç boyut, Işık, Görüntü, Lazer, Yansıma
+Güneş tutulması: Ay, Gölge, Karanlık, Gözlük, Gökyüzü
+Işık yılı: Uzaklık, Uzay, Hız, Yıldız, Mesafe
+Oksijen: Nefes, Hava, Gaz, Hayat, Element
+Periyodik tablo: Element, Kimya, Mendeleyev, Sembol, Atom
+Kuantum: Fizik, Atom, Parçacık, Bilgisayar, Belirsizlik
+Asteroit: Uzay, Kaya, Çarpmak, Dinozor, Göktaşı
+Karbon ayak izi: Çevre, Kirlilik, Emisyon, İklim, Karbondioksit
+Yazılım: Program, Kod, Bilgisayar, Uygulama, Geliştirici
+Radar: Dalga, Uçak, Tespit, Ekran, Sinyal
+Termodinamik: Isı, Enerji, Fizik, Yasa, Sıcaklık
+Görelilik: Einstein, Zaman, Işık hızı, Teori, Uzay
+Entropi: Düzensizlik, Isı, Fizik, Artmak, Kaos
+Mitoz: Hücre, Bölünme, İkiye, Biyoloji, Kromozom
+Kromozom: DNA, Gen, Hücre, XY, Kalıtım
+Protein: Et, Yumurta, Kas, Besin, Amino asit
+Karbonhidrat: Ekmek, Enerji, Şeker, Makarna, Besin
+Kalori: Enerji, Yemek, Diyet, Yakmak, Sayı
+Metabolizma: Hız, Enerji, Kilo, Vücut, Sindirim
+Adrenalin: Heyecan, Hormon, Korku, Kalp, Macera
+Dopamin: Mutluluk, Hormon, Beyin, Ödül, Bağımlılık
+Plasebo: Sahte, İlaç, Etki, İnanmak, Şeker hap
+Pandemi: Salgın, Dünya, Virüs, Maske, Karantina
+Karantina: Kapanmak, Ev, Salgın, Yasak, İzolasyon
+Nükleer: Atom, Enerji, Santral, Bomba, Radyasyon
+Radyasyon: Işın, Nükleer, Zararlı, Çernobil, Röntgen
+Lazer: Işık, Kırmızı, Kesmek, Işın, Nokta
+Fiber optik: İnternet, Kablo, Işık, Hızlı, Cam
+Siber güvenlik: Hacker, Şifre, Koruma, Bilgisayar, Virüs
+Metaverse: Sanal, Dünya, Gözlük, Facebook, Avatar
+Sanal gerçeklik: Gözlük, Oyun, Üç boyut, Dijital, VR
+Kripto para: Bitcoin, Dijital, Blok zinciri, Cüzdan, Borsa
+Bulut bilişim: İnternet, Depolama, Sunucu, Dosya, Online
+Veritabanı: Excel, Tablo, Kayıt, SQL, Bilgi
+Nanoteknoloji: Küçük, Parçacık, Bilim, Atom, Mikroskobik
+Gen: DNA, Kalıtım, Anne baba, Özellik, Kromozom
+Klonlama: Kopya, Koyun Dolly, Aynı, Genetik, Bilim
+Bağışıklık: Vücut, Hastalık, Savunma, Aşı, Direnç
+Ekvator: Dünya, Orta, Çizgi, Sıcak, Yarım küre
+Kutup yıldızı: Kuzey, Yön, Gece, Parlak, Gemici
+Süpernova: Yıldız, Patlama, Parlak, Uzay, Ölüm
+Satürn: Halka, Gezegen, Uzay, Büyük, Uydu
+Jüpiter: En büyük, Gezegen, Gaz, Kırmızı leke, Uzay`],
+
+            yerler: [`
+İstanbul: Boğaz, Şehir, Galata, Büyük, Köprü
+Ankara: Başkent, Anıtkabir, Kızılay, Meclis, Atakule
+İzmir: Ege, Kordon, Saat Kulesi, Boyoz, Deniz
+Plaj: Kum, Deniz, Şezlong, Güneş, Mayo
+Hastane: Doktor, Sedye, Acil, Hemşire, Ameliyat
+Okul: Öğrenci, Öğretmen, Sınıf, Ders, Teneffüs
+Havalimanı: Uçak, Bagaj, Pasaport, Kalkış, Terminal
+Park: Salıncak, Çocuk, Bank, Ağaç, Yeşil
+Kütüphane: Kitap, Sessiz, Okumak, Ödünç, Raf
+Mısır: Piramit, Firavun, Nil, Kahire, Patlamış
+Paris: Eyfel, Fransa, Aşk, Kule, Louvre
+Çöl: Kum, Sıcak, Deve, Vaha, Sahra
+Ada: Deniz, Su, Etrafı, Vapur, Kara
+Kapadokya: Balon, Peri bacası, Nevşehir, Göreme, Mağara
+Köprü: Boğaz, Karşı, Nehir, Geçmek, Asma
+Antalya: Tatil, Otel, Akdeniz, Plaj, Kaleiçi
+Bursa: İskender, Uludağ, Yeşil, Kestane şekeri, Osmanlı
+Trabzon: Karadeniz, Hamsi, Uzungöl, Sümela, Takım
+Londra: İngiltere, Big Ben, Kraliçe, Yağmur, Thames
+New York: Amerika, Özgürlük Heykeli, Manhattan, Büyük elma, Times Square
+Roma: İtalya, Kolezyum, Vatikan, Pizza, Antik
+Amerika: ABD, Kıta, Dolar, Washington, Kolomb
+Japonya: Tokyo, Sushi, Samuray, Ada, Güneş
+Çin: Pekin, Seddi, Kalabalık, Pirinç, Asya
+Almanya: Berlin, Bira, Avrupa, Gurbetçi, Mercedes
+İtalya: Roma, Pizza, Çizme, Makarna, Venedik
+Rusya: Moskova, Soğuk, Büyük, Kremlin, Votka
+Fransa: Paris, Eyfel, Şarap, Peynir, Avrupa
+Otel: Oda, Tatil, Resepsiyon, Yıldız, Konaklamak
+Restoran: Yemek, Garson, Menü, Masa, Hesap
+Kafe: Kahve, Oturmak, Masa, Tatlı, Arkadaş
+AVM: Alışveriş, Mağaza, Kalabalık, Kat, Sinema
+Cami: Namaz, Minare, Ezan, Kubbe, İmam
+Kilise: Haç, Papaz, Çan, Hristiyan, Dua
+Saray: Kral, Padişah, Büyük, Topkapı, Taht
+Kale: Sur, Taş, Eski, Savunma, Kule
+Hayvanat bahçesi: Fil, Kafes, Aslan, Ziyaret, Zürafa
+Akvaryum: Balık, Cam, Su, Deniz, Tank
+Çiftlik: Hayvan, Çiftçi, İnek, Tarla, Köy
+Köy: Tarla, Muhtar, Küçük, Doğa, İnek
+Şehir: Büyük, Bina, Kalabalık, Trafik, Belediye
+Liman: Gemi, Deniz, Yük, Rıhtım, Konteyner
+Gar: Tren, İstasyon, Haydarpaşa, Bekleme, Peron
+Durak: Otobüs, Beklemek, Bilet, Tabela, Kalabalık
+Eczane: İlaç, Reçete, Eczacı, Nöbetçi, Kırmızı E
+Sahil: Deniz, Kum, Yürüyüş, Kıyı, Plaj
+Bahçe: Çiçek, Ağaç, Ev, Çim, Sulamak
+Ofis: Masa, İş, Bilgisayar, Çalışmak, Toplantı`, `
+Metro: Tren, Yeraltı, Durak, Ray, Toplu taşıma
+Pamukkale: Travertin, Beyaz, Denizli, Termal, Hierapolis
+Efes: Antik, İzmir, Selçuk, Kütüphane, Roma
+Galata Kulesi: İstanbul, Beyoğlu, Hezarfen, Uçmak, Taş
+Venedik: Gondol, Kanal, İtalya, Su, Karnaval
+Kutup: Buz, Soğuk, Penguen, Kuzey, Güney
+Karadeniz: Hamsi, Horon, Trabzon, Rize, Yayla
+Kapalıçarşı: İstanbul, Alışveriş, Dükkan, Tarihi, Kuyumcu
+Truva: At, Tahta, Çanakkale, Savaş, Helen
+Mağara: Karanlık, Yarasa, Kaya, Sarkıt, Delik
+Vapur: Deniz, Martı, Simit, İskele, Kadıköy
+Stadyum: Maç, Tribün, Futbol, Seyirci, Saha
+Hapishane: Suçlu, Parmaklık, Mahkum, Ceza, Cezaevi
+Uzay istasyonu: Astronot, Yörünge, Dünya, ISS, Laboratuvar
+Hollywood: Film, Yıldız, Amerika, Los Angeles, Tabela
+Uludağ: Bursa, Kayak, Kar, Kış, Teleferik
+Boğaz: İstanbul, Köprü, Deniz, Vapur, Avrupa Asya
+Kız Kulesi: İstanbul, Üsküdar, Deniz, Efsane, Yılan
+Topkapı Sarayı: Osmanlı, Padişah, Müze, Harem, İstanbul
+Sultanahmet: Cami, Mavi, İstanbul, Meydan, Köfte
+Anıtkabir: Atatürk, Ankara, Mozole, Ziyaret, 10 Kasım
+Dolmabahçe: Saray, Atatürk, Beşiktaş, Saat, Osmanlı
+Taksim: Meydan, İstiklal, Beyoğlu, Anıt, Tramvay
+İstiklal Caddesi: Taksim, Beyoğlu, Tramvay, Kalabalık, Yürümek
+Adalar: Büyükada, Fayton, Bisiklet, Vapur, İstanbul
+Bodrum: Tatil, Ege, Kale, Gece hayatı, Marina
+Uzungöl: Trabzon, Çaykara, Karadeniz, Yayla, Doğa
+Van Gölü: Kedi, Sodalı, Büyük, Doğu, Akdamar
+Eyfel Kulesi: Paris, Demir, Fransa, Yüksek, Işıklar
+Big Ben: Londra, Saat, Kule, İngiltere, Çan
+Özgürlük Heykeli: New York, Meşale, Yeşil, Amerika, Fransa
+Kolezyum: Roma, Gladyatör, Arena, Antik, İtalya
+Piramit: Mısır, Firavun, Üçgen, Çöl, Mezar
+Pisa Kulesi: Eğik, İtalya, Yamuk, Fotoğraf, Düşmek
+Dubai: Burj Khalifa, Çöl, Zengin, Arap, Alışveriş
+Disneyland: Mickey, Lunapark, Çocuk, Paris, Şato
+Las Vegas: Kumar, Kumarhane, Amerika, Çöl, Gece
+Hawaii: Ada, Sörf, Çiçek kolye, Amerika, Okyanus
+Maldivler: Ada, Balayı, Okyanus, Bungalov, Turkuaz
+Sahra: Çöl, Afrika, Kum, Deve, Sıcak
+Alpler: Dağ, İsviçre, Kayak, Kar, Avrupa
+Nil: Nehir, Mısır, Afrika, Uzun, Timsah
+Tuna: Nehir, Avrupa, Viyana, Balık, Mavi
+Süveyş Kanalı: Mısır, Gemi, Kızıldeniz, Akdeniz, Geçiş
+Panama: Kanal, Orta Amerika, Şapka, Gemi, Ülke
+Antarktika: Buz, Güney, Kıta, Penguen, Soğuk
+Grönland: Buz, Ada, Danimarka, Kuzey, Soğuk
+Mardin: Taş evler, Güneydoğu, Mezopotamya, Süryani, Tarihi`, `
+Göbeklitepe: Şanlıurfa, Tapınak, Arkeoloji, Eski, Dikilitaş
+Nemrut: Dağ, Heykel, Adıyaman, Gün doğumu, Kral
+Sümela: Manastır, Trabzon, Kaya, Maçka, Uçurum
+Çanakkale: Savaş, Boğaz, Şehitlik, 1915, Truva
+Ayasofya: Müze, Cami, Bizans, Kubbe, Sultanahmet
+Machu Picchu: Peru, İnka, Dağ, Antik, Kayıp şehir
+Atlantis: Kayıp, Batık, Şehir, Efsane, Okyanus
+Everest: Dağ, Zirve, Himalaya, Yüksek, Tırmanmak
+Amazon: Orman, Nehir, Brezilya, Yağmur ormanı, Alışveriş
+Bermuda Üçgeni: Kaybolmak, Gemi, Uçak, Gizem, Okyanus
+Çin Seddi: Duvar, Uzun, Uzay, Asya, Taş
+Safranbolu: Karabük, Lokum, Konak, Tarihi, Kent
+Halfeti: Karagül, Şanlıurfa, Batık, Fırat, Tekne
+Vatikan: Papa, Roma, Küçük, Devlet, Katolik
+Tac Mahal: Hindistan, Mezar, Beyaz, Aşk, Mermer
+Petra: Ürdün, Kaya, Pembe, Antik, Indiana Jones
+Stonehenge: İngiltere, Taş, Daire, Gizem, Antik
+Angkor Wat: Kamboçya, Tapınak, Asya, Orman, Antik
+Kremlin: Moskova, Rusya, Kırmızı, Kale, Hükümet
+Akropolis: Atina, Yunan, Tepe, Tapınak, Antik
+Sagrada Familia: Barselona, Gaudi, Kilise, Bitmemiş, İspanya
+Louvre: Paris, Müze, Mona Lisa, Cam piramit, Fransa
+Kızıl Meydan: Moskova, Rusya, Kremlin, Kırmızı, Tören
+Ağrı Dağı: Nuh, Gemi, En yüksek, Doğu, Karlı
+Ani Harabeleri: Kars, Sınır, Ermeni, Kilise, Antik
+Aspendos: Antalya, Tiyatro, Roma, Antik, Opera
+Olimpos: Antalya, Yanartaş, Ağaç ev, Antik, Dağ
+Ölüdeniz: Fethiye, Yamaç paraşütü, Plaj, Turkuaz, Muğla
+Kelebekler Vadisi: Fethiye, Koy, Tekne, Kamp, Şelale
+Zeugma: Gaziantep, Mozaik, Çingene kızı, Antik, Müze
+Harran: Şanlıurfa, Kerpiç, Kubbe, Ev, Sıcak
+Balıklıgöl: Şanlıurfa, Kutsal, Hz. İbrahim, Ateş, Havuz
+Hasankeyf: Dicle, Baraj, Batık, Batman, Tarihi
+İshak Paşa Sarayı: Doğubayazıt, Ağrı, Tarihi, Osmanlı, Dağ
+Mostar Köprüsü: Bosna, Atlamak, Taş, Nehir, Mimar Sinan
+Kabe: Mekke, Hac, Siyah, Kutsal, Tavaf
+Kudüs: Kutsal, Mescid-i Aksa, Ağlama Duvarı, Eski şehir, Üç din
+Bali: Endonezya, Ada, Tatil, Tapınak, Pirinç tarlası
+Havana: Küba, Puro, Eski araba, Karayip, Salsa
+Rio de Janeiro: Brezilya, Karnaval, İsa heykeli, Samba, Plaj
+Serengeti: Afrika, Tanzanya, Safari, Göç, Aslan
+Galapagos: Ada, Kaplumbağa, Darwin, Ekvador, Evrim
+Sibirya: Rusya, Soğuk, Sürgün, Kar, Tren
+Himalayalar: Dağ, Everest, Nepal, Zirve, Tibet
+Santorini: Yunan, Beyaz, Mavi, Ada, Gün batımı
+Kilimanjaro: Afrika, Dağ, Tanzanya, Kar, Zirve
+Transilvanya: Drakula, Romanya, Vampir, Şato, Dağ
+Pompei: Yanardağ, İtalya, Kül, Antik, Vezüv`]
+        };
+
+        const CARDS = [];
+        CATEGORIES.forEach((cat) => {
+            RAW[cat.id].forEach((block, li) => {
+                block.split('\n').forEach((line) => {
+                    // Boş ya da hatalı satırlar sessizce atlanır
+                    const parts = line.split(':');
+                    if (parts.length !== 2 || !parts[0].trim()) return;
+                    const taboo = parts[1].split(',').map((s) => s.trim()).filter(Boolean);
+                    if (!taboo.length) return;
+                    CARDS.push({
+                        i: CARDS.length,
+                        cat: cat.id,
+                        level: li + 1,
+                        word: parts[0].trim(),
+                        taboo
+                    });
+                });
+            });
+        });
+        const CAT_NAME = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.name]));
+        const LEVELS = {
+            1: {
+                name: 'Kolay',
+                pts: 1,
+                badge: 'bg-emerald-600 text-white'
+            },
+            2: {
+                name: 'Orta',
+                pts: 2,
+                badge: 'bg-amber-500 text-zinc-950'
+            },
+            3: {
+                name: 'Zor',
+                pts: 3,
+                badge: 'bg-red-600 text-white'
+            },
+        };
+
+        /* =========================================================
+           CİHAZDA SAKLANAN VERİ (localStorage)
+           ========================================================= */
+        const KEYS = {
+            settings: 'blacklist.settings.v1',
+            history: 'blacklist.history.v1',
+            seen: 'blacklist.seen.v3',
+            pid: 'blacklist.pid.v1',
+            session: 'blacklist.session.v1',
+        };
+        const memoryStore = {};
+
+        function load(key, fallback) {
+            try {
+                const raw = localStorage.getItem(key);
+                if (raw) return JSON.parse(raw);
+            } catch (e) { /* yok say */ }
+            return memoryStore[key] ?? fallback;
+        }
+
+        function save(key, value) {
+            memoryStore[key] = value;
+            try {
+                localStorage.setItem(key, JSON.stringify(value));
+            } catch (e) { /* depolama yoksa bellekte kalır */ }
+        }
+
+        function getPid() {
+            let id = load(KEYS.pid, null);
+            if (!id) {
+                id = 'p' + Math.random().toString(36).slice(2, 10);
+                save(KEYS.pid, id);
+            }
+            return id;
+        }
+
+        /* =========================================================
+           AYARLAR
+           ========================================================= */
+        const cfg = {
+            place: 'local',
+            mode: 'duo',
+            duration: 60,
+            rounds: 3,
+            passLimit: 3,
+            cats: ['mix'],
+            diff: 'mix',
+            sound: true,
+            vibe: true,
+            swipe: true,
+        };
+        const gameSettings = () => ({
+            mode: cfg.mode,
+            duration: cfg.duration,
+            rounds: cfg.rounds,
+            passLimit: cfg.passLimit,
+            cats: [...cfg.cats],
+            diff: cfg.diff
+        });
+
+        /* =========================================================
+           OYUN MOTORU
+           Hem tek telefonda hem online aynı fonksiyonlar kullanılır.
+           Oyunun tüm durumu tek bir "G" nesnesindedir; online modda
+           bu nesne Firebase'de tutulur ve herkese anında yansır.
+           ========================================================= */
+        function shuffle(arr) {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        function poolIds(s) {
+            return CARDS.filter((c) => (s.cats.includes('mix') || s.cats.includes(c.cat)) && (s.diff === 'mix' || c.level === Number(s.diff))).map((c) => c.i);
+        }
+
+        // Görülmemiş kartlar önce gelsin; az kaldıysa kayıt sıfırlanır
+        function makeDeck(s, seen) {
+            const pool = poolIds(s);
+            let unseen = pool.filter((i) => !seen.has(i));
+            let old = pool.filter((i) => seen.has(i));
+            if (unseen.length < Math.min(30, pool.length)) {
+                unseen = pool;
+                old = [];
+                pool.forEach((i) => seen.delete(i));
+                save(KEYS.seen, [...seen]);
+            }
+            return [...shuffle(unseen), ...shuffle(old)];
+        }
+
+        function newGame(s, names, narr, seen) {
+            return {
+                gid: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                s,
+                names,
+                narr,
+                scores: [0, 0],
+                roundScores: Array.from({
+                    length: s.rounds
+                }, () => [0, 0]),
+                round: 1,
+                side: 0,
+                turnCount: [0, 0],
+                phase: 'ready', // ready → turn → ready … → (düello: review →) final
+                turn: null,
+                turns: [],
+                deck: makeDeck(s, seen),
+                pos: 0,
+            };
+        }
+
+        const narratorOf = (G) => {
+            const list = G.narr[G.side];
+            return list[G.turnCount[G.side] % list.length];
+        };
+
+        function drawCard(G) {
+            if (G.pos >= G.deck.length) {
+                G.deck = shuffle(poolIds(G.s));
+                G.pos = 0;
+            }
+            G.turn.card = G.deck[G.pos++];
+        }
+
+        function startTurn(G, now) {
+            const n = narratorOf(G);
+            G.turn = {
+                id: `${G.gid}-${G.turns.length + 1}`,
+                side: G.side,
+                round: G.round,
+                nid: n.id,
+                narrator: n.name,
+                items: [],
+                correct: 0,
+                taboo: 0,
+                pass: 0,
+                points: 0,
+                passes: G.s.passLimit,
+                endsAt: now + G.s.duration * 1000,
+                left: G.s.duration * 1000,
+                paused: null,
+                card: -1,
+            };
+            drawCard(G);
+            G.phase = 'turn';
+            return true;
+        }
+
+        const timeLeftMs = (G, now) => (!G.turn ? 0 : G.turn.paused != null ? G.turn.paused : Math.max(0, G.turn.endsAt - now));
+
+        // Doğru / Tabu / Pas. cid verilirse işlem sadece o kart hâlâ açıksa uygulanır
+        // (anlatıcı ile rakibin aynı anda bastığı durumda yanlış karta yazılmasın).
+        function act(G, result, now, cid) {
+            const t = G.turn;
+            if (G.phase !== 'turn' || !t || t.paused != null || now >= t.endsAt) return false;
+            if (cid != null && t.card !== cid) return false;
+            if (result === 'pass' && t.passes <= 0) return false;
+            const c = CARDS[t.card];
+            let d = 0;
+            if (result === 'correct') {
+                d = LEVELS[c.level].pts;
+                t.correct++;
+            } else if (result === 'taboo') {
+                d = -1;
+                t.taboo++;
+            } else {
+                t.pass++;
+                t.passes--;
+            }
+            t.items.push({
+                c: t.card,
+                r: result
+            });
+            t.points += d;
+            G.scores[t.side] += d;
+            G.roundScores[t.round - 1][t.side] += d;
+            drawCard(G);
+            return true;
+        }
+
+        // Takım modu: izleyen rakip "TABU!" der. Kart değiştiği için her karta tek kez basılabilir.
+        function callTaboo(G, cid, by, now) {
+            if (G.s.mode !== 'team' || !act(G, 'taboo', now, cid)) return false;
+            G.turn.items[G.turn.items.length - 1].by = by;
+            return true;
+        }
+
+        // Düello: son turda doğru sayılan kartı tabuya çevirir (ya da itirazı geri alır)
+        function toggleObjection(G, tid, i) {
+            if (G.s.mode !== 'duo' || (G.phase !== 'ready' && G.phase !== 'review')) return false;
+            const t = G.turns[G.turns.length - 1];
+            const it = t ?.items[i];
+            if (!t || t.id !== tid || !it) return false;
+            const pts = LEVELS[CARDS[it.c].level].pts;
+            let d;
+            if (it.r === 'correct') {
+                it.r = 'taboo';
+                it.obj = true;
+                t.correct--;
+                t.taboo++;
+                d = -1 - pts;
+            } else if (it.r === 'taboo' && it.obj) {
+                it.r = 'correct';
+                delete it.obj;
+                t.correct++;
+                t.taboo--;
+                d = pts + 1;
+            } else return false;
+            t.points += d;
+            G.scores[t.side] += d;
+            G.roundScores[t.round - 1][t.side] += d;
+            return true;
+        }
+
+        function finishGame(G) {
+            if (G.phase !== 'review') return false;
+            G.phase = 'final';
+            return true;
+        }
+
+        function setPause(G, on, now) {
+            const t = G.turn;
+            if (G.phase !== 'turn' || !t) return false;
+            if (on && t.paused == null) {
+                t.paused = Math.max(0, t.endsAt - now);
+                return true;
+            }
+            if (!on && t.paused != null) {
+                t.endsAt = now + t.paused;
+                t.left = t.paused;
+                t.paused = null;
+                return true;
+            }
+            return false;
+        }
+
+        function endTurn(G) {
+            if (G.phase !== 'turn' || !G.turn) return false;
+            const t = G.turn;
+            const items = [...t.items];
+            if (t.card >= 0) items.push({
+                c: t.card,
+                r: 'timeout'
+            });
+            G.turns.push({
+                id: t.id,
+                side: t.side,
+                round: t.round,
+                nid: t.nid,
+                narrator: t.narrator,
+                items,
+                correct: t.correct,
+                taboo: t.taboo,
+                pass: t.pass,
+                points: t.points
+            });
+            G.turnCount[t.side]++;
+            G.turn = null;
+            if (t.side === 1) {
+                // Düelloda son turun doğrularına itiraz edilebilsin diye önce kontrol ekranı gelir
+                if (G.round >= G.s.rounds) {
+                    G.phase = G.s.mode === 'duo' && t.correct > 0 ? 'review' : 'final';
+                    return true;
+                }
+                G.round++;
+            }
+            G.side = 1 - t.side;
+            G.phase = 'ready';
+            return true;
+        }
+
+        // Anlatıcı bağlı değilse sırası boş tur olarak geçer
+        function skipTurn(G, now) {
+            if (G.phase !== 'ready') return false;
+            startTurn(G, now);
+            G.pos--;
+            G.turn.card = -1; // çekilen kart desteye geri döner
+            return endTurn(G);
+        }
+
+        // Firebase boş dizileri silebilir; okurken yapıyı onar
+        const toArr = (v) => (Array.isArray(v) ? v : v ? Object.keys(v).sort((a, b) => a - b).map((k) => v[k]) : []);
+        // Veritabanından gelen değerler güvenilmez: sayı olması gereken her şey sayıya çevrilir
+        const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+        const ITEM_RESULTS = ['correct', 'taboo', 'pass', 'timeout'];
+        const validItems = (items) => toArr(items).filter((it) => it && CARDS[it.c] && ITEM_RESULTS.includes(it.r));
+
+        function normalize(G) {
+            G.names = toArr(G.names);
+            G.narr = [toArr(G.narr ?.[0]), toArr(G.narr ?.[1])];
+            G.scores = toArr(G.scores).map(Number);
+            G.turnCount = toArr(G.turnCount).map(Number);
+            G.roundScores = toArr(G.roundScores).map((r) => {
+                const a = toArr(r);
+                return [num(a[0]), num(a[1])];
+            });
+            G.deck = toArr(G.deck);
+            G.s.cats = toArr(G.s.cats);
+            // Ekrana basılan sayılar gerçekten sayı olsun; tanınmayan kart kayıtları atlanır
+            G.turns = toArr(G.turns).map((t) => ({
+                ...t,
+                side: num(t.side),
+                round: num(t.round),
+                correct: num(t.correct),
+                taboo: num(t.taboo),
+                pass: num(t.pass),
+                points: num(t.points),
+                items: validItems(t.items),
+            }));
+            if (G.turn) {
+                G.turn.items = validItems(G.turn.items);
+                if (G.turn.paused === undefined) G.turn.paused = null;
+            } else G.turn = null;
+            return G;
+        }
+
+        /* =========================================================
+           UYGULAMA DURUMU
+           ========================================================= */
+        const app = {
+            online: false,
+            G: null,
+            room: null,
+            code: null,
+            me: getPid(),
+            backend: null,
+            unsub: null,
+            offset: 0,
+            connected: true,
+            seen: new Set(load(KEYS.seen, [])),
+            shownCard: -1,
+            fxTurn: null,
+            fxLen: 0,
+            prevPhase: null,
+            endingTurn: null,
+            lastSecs: null,
+            busy: false,
+            pendingShake: false,
+            saved: new Set(),
+            statsReturn: 'screen-setup',
+            clock: null,
+            roomLive: false,
+            calledCard: null,
+        };
+        // Tur sürerken zaman, sayacın bu cihazda bağlandığı yerel saate göre hesaplanır (bkz. syncClock)
+        const now = () => {
+            const t = app.G ?.turn,
+                c = app.clock;
+            if (app.online && t && c && c.key === `${t.id}|${t.endsAt}`) return t.endsAt - (c.localEnds - Date.now());
+            return Date.now() + (app.online ? app.offset : 0);
+        };
+
+        // Telefonların saatleri farklı olabilir; endsAt'i yazan cihazın saatine güvenmek yerine
+        // değişikliğin bu cihaza ulaştığı andan itibaren kalan süreyi (left) sayarız.
+        // Sonradan katılan ya da yeniden bağlanan cihaz ise saat farkıyla tahmin eder.
+        function syncClock(live) {
+            const t = app.G ?.turn;
+            if (!t || t.paused != null) {
+                app.clock = null;
+                return;
+            }
+            const key = `${t.id}|${t.endsAt}`;
+            if (app.clock ?.key === key) return;
+            const est = t.endsAt - (Date.now() + app.offset);
+            const left = Number(t.left) || est;
+            const ms = live ? left : Math.min(Math.max(est, 0), left);
+            app.clock = {
+                key,
+                localEnds: Date.now() + ms
+            };
+        }
+
+        const $ = (id) => document.getElementById(id);
+        const RING_LENGTH = 2 * Math.PI * 44;
+        $('timerRing').style.strokeDasharray = RING_LENGTH;
+
+        function escapeHTML(str) {
+            return String(str).replace(/[&<>"']/g, (c) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[c]));
+        }
+
+        let currentScreen = 'screen-setup';
+
+        function showScreen(id) {
+            if (currentScreen === id) return;
+            currentScreen = id;
+            document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('active', s.id === id));
+            window.scrollTo({
+                top: 0
+            });
+        }
+
+        let toastTimer;
+
+        function toast(msg) {
+            const el = $('toast');
+            el.textContent = msg;
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(1rem)';
+            }, 2800);
+        }
+
+        // Oyunu değiştiren her işlem buradan geçer
+        function dispatch(fn) {
+            if (!app.G) return;
+            if (!app.online) {
+                if (fn(app.G, now())) render();
+                return;
+            }
+            app.backend.transact(`rooms/${app.code}/game`, (G) => {
+                if (!G) return G; // önbellek boşsa Firebase gerçek değerle yeniden çağırır
+                normalize(G);
+                return fn(G, now()) ? G : undefined;
+            }).catch(() => toast('İşlem gönderilemedi, bağlantını kontrol et.'));
+        }
+
+        /* =========================================================
+           KURULUM EKRANI
+           ========================================================= */
+        function renderCatChips() {
+            const chips = [{
+                id: 'mix',
+                name: 'Karışık (hepsi)'
+            }, ...CATEGORIES];
+            $('catChips').innerHTML = chips.map((c) => {
+                const count = c.id === 'mix' ? CARDS.length : CARDS.filter((k) => k.cat === c.id).length;
+                return `<button class="chip rounded-full border border-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-300 transition hover:border-zinc-500" data-cat="${c.id}">
+      ${escapeHTML(c.name)} <span class="text-xs opacity-60">${count}</span></button>`;
+            }).join('');
+            $('catChips').querySelectorAll('.chip').forEach((btn) => btn.addEventListener('click', () => toggleCat(btn.dataset.cat)));
+        }
+
+        function toggleCat(id) {
+            if (id === 'mix') cfg.cats = ['mix'];
+            else {
+                let cats = cfg.cats.filter((c) => c !== 'mix');
+                cats = cats.includes(id) ? cats.filter((c) => c !== id) : [...cats, id];
+                cfg.cats = cats.length === 0 || cats.length === CATEGORIES.length ? ['mix'] : cats;
+            }
+            syncSetupUI();
+            persistSettings();
+        }
+
+        function syncSetupUI() {
+            const online = cfg.place === 'online';
+            const isTeam = cfg.mode === 'team';
+            document.querySelectorAll('.mode-card').forEach((b) => b.classList.toggle('selected', b.dataset.mode === cfg.mode));
+            $('catChips').querySelectorAll('.chip').forEach((b) => b.classList.toggle('selected', cfg.cats.includes(b.dataset.cat)));
+            const groupValue = {
+                place: cfg.place,
+                duration: cfg.duration,
+                rounds: cfg.rounds,
+                passes: cfg.passLimit,
+                diff: cfg.diff
+            };
+            document.querySelectorAll('[data-group]').forEach((g) => {
+                g.querySelectorAll('.opt').forEach((b) => b.classList.toggle('selected', b.dataset.value === String(groupValue[g.dataset.group])));
+            });
+            $('tSound').setAttribute('aria-checked', cfg.sound);
+            $('tVibe').setAttribute('aria-checked', cfg.vibe);
+            $('tSwipe').setAttribute('aria-checked', cfg.swipe);
+            $('poolCount').textContent = `Seçimine uyan kart: ${poolIds(gameSettings()).length}.`;
+
+            // Online / tek telefon görünümü
+            $('onlinePanel').hidden = !online;
+            $('onlineUnavailable').hidden = ONLINE_AVAILABLE;
+            $('createRoomBtn').disabled = !ONLINE_AVAILABLE;
+            $('joinRoomBtn').disabled = !ONLINE_AVAILABLE;
+            $('startBtn').hidden = online;
+            $('namesBlock').hidden = online && !isTeam;
+
+            // Moda göre isim alanları
+            $('namesTitle').textContent = isTeam ? 'Takımlar' : 'Oyuncular';
+            $('label0').textContent = isTeam ? 'A Takımı' : '1. Oyuncu';
+            $('label1').textContent = isTeam ? 'B Takımı' : '2. Oyuncu';
+            $('name0').placeholder = isTeam ? 'Takım adı (örn. Kırmızılar)' : 'İsim';
+            $('name1').placeholder = isTeam ? 'Takım adı (örn. Maviler)' : 'İsim';
+            document.querySelectorAll('.team-only').forEach((el) => el.classList.toggle('hidden', !isTeam || online));
+            $('modeHint').textContent = online ?
+                'Takım adları. Oyuncular odaya katılınca kendi takımını seçer.' :
+                isTeam ?
+                'Her takımdan bir kişi anlatır, takım arkadaşları tahmin eder. Üye yazarsanız anlatıcı her turda sırayla değişir.' :
+                'Sırası gelen oyuncu anlatır, diğeri tahmin eder. O turda kazanılan puanlar anlatıcıya yazılır.';
+        }
+
+        document.querySelectorAll('.mode-card').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                cfg.mode = btn.dataset.mode;
+                syncSetupUI();
+                persistSettings();
+            });
+        });
+
+        document.querySelectorAll('[data-group]').forEach((group) => {
+            group.querySelectorAll('.opt').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const v = btn.dataset.value;
+                    const key = group.dataset.group;
+                    if (key === 'place') cfg.place = v;
+                    if (key === 'duration') cfg.duration = Number(v);
+                    if (key === 'rounds') cfg.rounds = Number(v);
+                    if (key === 'passes') cfg.passLimit = Number(v);
+                    if (key === 'diff') cfg.diff = v;
+                    syncSetupUI();
+                    persistSettings();
+                });
+            });
+        });
+
+        [
+            ['tSound', 'sound'],
+            ['tVibe', 'vibe'],
+            ['tSwipe', 'swipe']
+        ].forEach(([id, key]) => {
+            $(id).addEventListener('click', () => {
+                cfg[key] = !cfg[key];
+                syncSetupUI();
+                persistSettings();
+                if (key === 'vibe' && cfg.vibe) buzz(40);
+            });
+        });
+
+        function persistSettings() {
+            save(KEYS.settings, {
+                ...cfg,
+                name0: $('name0').value,
+                name1: $('name1').value,
+                members0: $('members0').value,
+                members1: $('members1').value,
+                onlineName: $('onlineName').value,
+            });
+        }
+
+        function restoreSettings() {
+            const s = load(KEYS.settings, null);
+            if (!s) return;
+            Object.keys(cfg).forEach((k) => {
+                if (s[k] !== undefined) cfg[k] = s[k];
+            });
+            cfg.cats = (Array.isArray(cfg.cats) ? cfg.cats : ['mix']).filter((c) => c === 'mix' || CAT_NAME[c]);
+            if (!cfg.cats.length) cfg.cats = ['mix'];
+            ['name0', 'name1', 'members0', 'members1', 'onlineName'].forEach((k) => {
+                if (s[k]) $(k).value = s[k];
+            });
+        }
+
+        const parseMembers = (text) => text.split(',').map((s) => s.trim()).filter(Boolean);
+
+        function showError(id, msg) {
+            $(id).textContent = msg;
+            $(id).hidden = !msg;
+        }
+
+        // Tek telefonda başlat
+        $('startBtn').addEventListener('click', () => {
+            showError('setupError', '');
+            const isTeam = cfg.mode === 'team';
+            const fallback = isTeam ? ['A Takımı', 'B Takımı'] : ['1. Oyuncu', '2. Oyuncu'];
+            const names = [0, 1].map((i) => $('name' + i).value.trim() || fallback[i]);
+            const members = isTeam ? [0, 1].map((i) => parseMembers($('members' + i).value)) : [
+                [],
+                []
+            ];
+
+            if (names[0].toLocaleLowerCase('tr') === names[1].toLocaleLowerCase('tr')) return showError('setupError', 'İki tarafa farklı isim verin.');
+            if (isTeam && members.some((m) => m.length === 1)) return showError('setupError', 'Üye yazdıysanız her takımda en az 2 kişi olmalı (toplam en az 4 kişi).');
+            if (!poolIds(gameSettings()).length) return showError('setupError', 'Bu seçime uyan kart yok, kategori veya zorluğu değiştirin.');
+
+            const narr = [0, 1].map((s) => (members[s].length ? members[s].map((m, j) => ({
+                id: `s${s}m${j}`,
+                name: m
+            })) : [{
+                id: `s${s}`,
+                name: names[s]
+            }]));
+            persistSettings();
+            unlockAudio();
+            app.online = false;
+            app.G = newGame(gameSettings(), names, narr, app.seen);
+            render();
+        });
+
+        /* =========================================================
+           ONLINE: BAĞLANTI (Firebase Realtime Database)
+           ========================================================= */
+        async function firebaseBackend() {
+            // jsDelivr'dan yüklenir. database@1.0.5 ve auth@1.7.3 app@0.10.3'e bağlı; sürümler birlikte değiştirilmeli
+            const base = 'https://cdn.jsdelivr.net/npm/@firebase/';
+            const [{
+                initializeApp
+            }, fdb, fauth] = await Promise.all([
+                import (base + 'app@0.10.3/+esm'),
+                import (base + 'database@1.0.5/+esm'),
+                import (base + 'auth@1.7.3/+esm'),
+            ]);
+            const fbApp = initializeApp(FIREBASE_CONFIG);
+
+            // Anonim giriş: her cihaz görünmez bir kimlik alır ve oyuncu kimliği olarak o kullanılır.
+            // Veritabanı kuralları bu kimliğe göre kimin neyi yazabileceğini kontrol eder.
+            // Konsolda anonim giriş kapalıysa eski cihaz kimliğiyle devam edilir (kurallar izin verdiği sürece).
+            try {
+                const auth = fauth.getAuth(fbApp);
+                if (auth.authStateReady) await auth.authStateReady();
+                if (!auth.currentUser) await fauth.signInAnonymously(auth);
+                app.me = auth.currentUser.uid;
+            } catch (e) {
+                console.warn('[Blacklist] Anonim giriş yapılamadı:', e ?.code || e);
+            }
+
+            const db = fdb.getDatabase(fbApp);
+            const R = (p) => fdb.ref(db, p);
+            let presenceRef = null;
+
+            // Sunucu saati farkı: herkesin sayacı aynı anda biter
+            fdb.onValue(R('.info/serverTimeOffset'), (s) => {
+                app.offset = s.val() || 0;
+            });
+            // Bağlantı durumu ve "çevrimiçi" işareti
+            fdb.onValue(R('.info/connected'), (s) => {
+                app.connected = !!s.val();
+                if (!app.connected) app.roomLive = false; // yeniden bağlanınca gelen veri canlı sayılmaz
+                $('offlineBar').hidden = app.connected || !app.online;
+                if (s.val() && presenceRef) {
+                    fdb.onDisconnect(presenceRef).set(false);
+                    fdb.set(presenceRef, true);
+                }
+            });
+
+            return {
+                get: async(p) => (await fdb.get(R(p))).val(),
+                // Anahtara göre son n kayıt (oyun kimlikleri zamana göre sıralı başlar)
+                recent: async(p, n) => (await fdb.get(fdb.query(R(p), fdb.orderByKey(), fdb.limitToLast(n)))).val(),
+                // "key" alanı ts'den küçük/eşit olan kayıtlar
+                olderThan: async(p, key, ts) => (await fdb.get(fdb.query(R(p), fdb.orderByChild(key), fdb.endAt(ts)))).val(),
+                set: (p, v) => fdb.set(R(p), v),
+                remove: (p) => fdb.remove(R(p)),
+                watch: (p, cb) => fdb.onValue(R(p), (s) => cb(s.val())),
+                transact: (p, fn) => fdb.runTransaction(R(p), fn),
+                presence(p) {
+                    presenceRef = R(p);
+                    fdb.onDisconnect(presenceRef).set(false);
+                    fdb.set(presenceRef, true);
+                },
+                async clearPresence() {
+                    if (presenceRef) {
+                        try {
+                            await fdb.onDisconnect(presenceRef).cancel();
+                        } catch (e) { /* yok say */ }
+                    }
+                    presenceRef = null;
+                },
+            };
+        }
+
+        async function getBackend() {
+            if (!app.backend) app.backend = window.BLACKLIST_BACKEND ? await window.BLACKLIST_BACKEND() : await firebaseBackend();
+            return app.backend;
+        }
+
+        const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const genCode = () => Array.from({
+            length: 5
+        }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
+
+        // 12 saatten eski odaları sil (hâlâ bağlı biri varsa dokunma). Oda kurulurken arka planda çalışır.
+        const ROOM_MAX_AGE = 12 * 60 * 60 * 1000;
+        async function cleanupOldRooms(be) {
+            if (!be.olderThan) return;
+            try {
+                const old = (await be.olderThan('rooms', 'created', Date.now() - ROOM_MAX_AGE)) || {};
+                const stale = Object.entries(old).filter(([code, r]) => code !== app.code && !Object.values(r ?.players || {}).some((p) => p && p.on === true));
+                await Promise.all(stale.map(([code]) => be.remove(`rooms/${code}`).catch(() => {})));
+            } catch (e) { /* temizlik başarısızsa oyunu etkilemesin */ }
+        }
+
+        function onlineNameOrError() {
+            const name = $('onlineName').value.trim();
+            if (!name) {
+                showError('onlineError', 'Önce adını yaz.');
+                $('onlineName').focus();
+                return null;
+            }
+            return name;
+        }
+
+        function setOnlineBusy(on) {
+            $('createRoomBtn').disabled = on || !ONLINE_AVAILABLE;
+            $('joinRoomBtn').disabled = on || !ONLINE_AVAILABLE;
+        }
+
+        $('createRoomBtn').addEventListener('click', async() => {
+            showError('onlineError', '');
+            const name = onlineNameOrError();
+            if (!name) return;
+            if (!poolIds(gameSettings()).length) return showError('onlineError', 'Bu seçime uyan kart yok, kategori veya zorluğu değiştirin.');
+            persistSettings();
+            unlockAudio();
+            setOnlineBusy(true);
+            try {
+                const be = await getBackend();
+                cleanupOldRooms(be);
+                let code = genCode();
+                for (let i = 0; i < 5 && (await be.get(`rooms/${code}`)); i++) code = genCode();
+                const teamNames = cfg.mode === 'team' ?
+                    [$('name0').value.trim() || 'A Takımı', $('name1').value.trim() || 'B Takımı'] :
+                    ['1. Oyuncu', '2. Oyuncu'];
+                await be.set(`rooms/${code}`, {
+                    host: app.me,
+                    created: Date.now(),
+                    settings: gameSettings(),
+                    teamNames,
+                    players: {
+                        [app.me]: {
+                            name,
+                            side: 0,
+                            t: Date.now(),
+                            on: true
+                        }
+                    },
+                });
+                enterRoom(code, name);
+            } catch (e) {
+                console.error('Oda kurulamadı:', e);
+                showError('onlineError', /permission/i.test(String(e ?.code || e ?.message)) ?
+                    'Oda kurulamadı: Firebase erişim izni yok. Realtime Database kurallarını kontrol et.' :
+                    'Oda kurulamadı. İnternet bağlantını ve Firebase ayarlarını kontrol et.');
+            } finally {
+                setOnlineBusy(false);
+            }
+        });
+
+        $('joinRoomBtn').addEventListener('click', () => {
+            showError('onlineError', '');
+            const name = onlineNameOrError();
+            if (!name) return;
+            const code = $('joinCode').value.trim().toUpperCase();
+            if (code.length !== 5) return showError('onlineError', 'Oda kodu 5 karakter olmalı.');
+            persistSettings();
+            unlockAudio();
+            joinRoom(code, name);
+        });
+        $('joinCode').addEventListener('input', (e) => {
+            e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        });
+
+        async function joinRoom(code, name, silent) {
+            setOnlineBusy(true);
+            try {
+                const be = await getBackend();
+                const room = await be.get(`rooms/${code}`);
+                if (!room) throw new Error('Oda bulunamadı. Kodu kontrol et.');
+                const players = Object.fromEntries(Object.entries(room.players || {}).filter(([, p]) => p && p.name));
+                let side;
+                if (players[app.me]) side = players[app.me].side;
+                else {
+                    const counts = [0, 1].map((s) => Object.values(players).filter((p) => p.side === s).length);
+                    if (room.settings.mode === 'duo' && counts[0] >= 1 && counts[1] >= 1) throw new Error('Oda dolu, düello 2 kişilik.');
+                    side = counts[0] <= counts[1] ? 0 : 1;
+                }
+                await be.set(`rooms/${code}/players/${app.me}`, {
+                    name,
+                    side,
+                    t: players[app.me] ?.t || Date.now(),
+                    on: true
+                });
+                enterRoom(code, name);
+            } catch (e) {
+                save(KEYS.session, null);
+                if (!silent) showError('onlineError', e.message.startsWith('Oda') ? e.message : 'Odaya bağlanılamadı. İnternet bağlantını kontrol et.');
+            } finally {
+                setOnlineBusy(false);
+            }
+        }
+
+        function enterRoom(code, name) {
+            const be = app.backend;
+            app.online = true;
+            app.code = code;
+            app.G = null;
+            app.room = null;
+            app.clock = null;
+            app.roomLive = false;
+            save(KEYS.session, {
+                code,
+                name
+            });
+            be.presence(`rooms/${code}/players/${app.me}/on`);
+            app.unsub = be.watch(`rooms/${code}`, onRoom);
+            try {
+                history.replaceState(null, '', `${location.pathname}?oda=${code}`);
+            } catch (e) { /* yok say */ }
+        }
+
+        function onRoom(room) {
+            if (!app.online) return;
+            if (!room) {
+                leaveRoom('Oda kapatıldı.');
+                return;
+            }
+            app.room = room;
+            app.G = room.game ? normalize(room.game) : null;
+            syncClock(app.roomLive);
+            app.roomLive = app.connected;
+            render();
+        }
+
+        async function leaveRoom(message) {
+            const be = app.backend,
+                code = app.code;
+            if (app.unsub) app.unsub();
+            app.unsub = null;
+            const room = app.room;
+            app.online = false;
+            app.G = null;
+            app.room = null;
+            app.code = null;
+            save(KEYS.session, null);
+            releaseAwake();
+            $('offlineBar').hidden = true;
+            try {
+                history.replaceState(null, '', location.pathname);
+            } catch (e) { /* yok say */ }
+            showScreen('screen-setup');
+            if (message) toast(message);
+            if (be && code) {
+                try {
+                    await be.clearPresence();
+                    const others = Object.entries(room ?.players || {}).filter(([id, p]) => id !== app.me && p && p.name);
+                    if (others.length === 0) await be.remove(`rooms/${code}`); // son kişi çıkınca oda silinir
+                    else await be.remove(`rooms/${code}/players/${app.me}`);
+                } catch (e) { /* yok say */ }
+            }
+        }
+        document.querySelectorAll('.leaveBtn').forEach((b) => b.addEventListener('click', () => leaveRoom()));
+
+        // Oda oyuncuları (katılma sırasına göre)
+        function roomPlayers() {
+            return Object.entries(app.room ?.players || {})
+                .filter(([, p]) => p && p.name)
+                .map(([id, p]) => ({
+                    id,
+                    ...p,
+                    on: p.on !== false
+                }))
+                .sort((a, b) => a.t - b.t);
+        }
+
+        // Oda sahibi çıktıysa en eski bağlı oyuncu yönetir
+        function isHost() {
+            const ps = roomPlayers();
+            const host = ps.find((p) => p.id === app.room ?.host);
+            if (host && host.on) return host.id === app.me;
+            return ps.find((p) => p.on) ?.id === app.me;
+        }
+
+        function settingsSummary(s) {
+            const cats = s.cats.includes('mix') ? 'Tüm kategoriler' : s.cats.map((c) => CAT_NAME[c]).join(', ');
+            const diff = s.diff === 'mix' ? 'karışık zorluk' : LEVELS[s.diff].name.toLocaleLowerCase('tr');
+            return `${s.mode === 'team' ? 'Takım' : 'Düello'} · ${cats} · ${diff} · ${s.duration} sn · ${s.rounds} tur · ${s.passLimit} pas`;
+        }
+
+        /* =========================================================
+           LOBİ
+           ========================================================= */
+        function renderLobby() {
+            const r = app.room;
+            if (!r) return;
+            const s = {...r.settings,
+                cats: toArr(r.settings.cats)
+            };
+            const duo = s.mode === 'duo';
+            const ps = roomPlayers();
+            const me = ps.find((p) => p.id === app.me);
+            const hostId = ps.find((p) => p.id === r.host && p.on) ? r.host : ps.find((p) => p.on) ?.id;
+
+            $('lobbyCode').textContent = app.code;
+            $('lobbySettings').textContent = settingsSummary(s);
+            $('lobbyLink').value = `${location.origin}${location.pathname}?oda=${app.code}`;
+
+            const sideNames = duo ? ['1. Oyuncu', '2. Oyuncu'] : toArr(r.teamNames);
+            [0, 1].forEach((side) => {
+                        const list = ps.filter((p) => p.side === side);
+                        $('lobbySideName' + side).textContent = sideNames[side];
+                        $('lobbySide' + side).innerHTML = list.length ?
+                            list.map((p) => {
+                                    const tags = [p.id === app.me ? 'sen' : '', p.id === hostId ? 'oda sahibi' : '', p.on ? '' : 'bağlı değil'].filter(Boolean).join(' · ');
+                                    return `<li class="flex items-start gap-2 ${p.on ? '' : 'opacity-50'}">
+            <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full ${p.on ? 'bg-emerald-400' : 'bg-zinc-600'}"></span>
+            <span class="min-w-0"><span class="block truncate ${p.id === app.me ? 'font-bold' : ''}">${escapeHTML(p.name)}</span>
+            ${tags ? `<span class="block text-[11px] text-zinc-500">${tags}</span>` : ''}</span></li>`;
+        }).join('')
+      : '<li class="text-zinc-500">Boş</li>';
+    $('joinSide' + side).hidden = !me || me.side === side || (duo && list.length > 0);
+  });
+
+  const online = ps.filter((p) => p.on);
+  const counts = [0, 1].map((side) => online.filter((p) => p.side === side).length);
+  let problem = '';
+  if (duo && (counts[0] !== 1 || counts[1] !== 1)) problem = 'Düello için iki tarafta da birer oyuncu olmalı. Arkadaşının katılmasını bekle.';
+  if (!duo && (counts[0] < 2 || counts[1] < 2)) problem = 'Takım modu için her takımda en az 2 kişi olmalı.';
+  const host = isHost();
+  $('lobbyStartBtn').hidden = !host;
+  $('lobbyStartBtn').disabled = !!problem;
+  $('lobbyStatus').textContent = problem || (host ? 'Herkes hazır. Sesli aramayı açın ve oyunu başlatın.' : 'Oda sahibinin oyunu başlatması bekleniyor.');
+}
+
+[0, 1].forEach((side) => $('joinSide' + side).addEventListener('click', () => {
+  app.backend.set(`rooms/${app.code}/players/${app.me}/side`, side).catch(() => toast('Takım değiştirilemedi.'));
+}));
+
+$('shareBtn').addEventListener('click', async () => {
+  const url = $('lobbyLink').value;
+  const text = `Blacklist oynayalım! Oda kodu: ${app.code}`;
+  try {
+    if (navigator.share) { await navigator.share({ title: 'Blacklist', text, url }); return; }
+    await navigator.clipboard.writeText(url);
+    toast('Link kopyalandı.');
+  } catch (e) {
+    $('lobbyLink').select();
+    if (e?.name !== 'AbortError') toast('Linki seçtim, kopyalayıp gönderebilirsin.');
+  }
+});
+
+function buildOnlineGame() {
+  const r = app.room;
+  const s = { ...r.settings, cats: toArr(r.settings.cats) };
+  const ps = roomPlayers().filter((p) => p.on);
+  const narr = [0, 1].map((side) => ps.filter((p) => p.side === side).map((p) => ({ id: p.id, name: p.name })));
+  const names = s.mode === 'duo' ? [narr[0][0].name, narr[1][0].name] : toArr(r.teamNames);
+  return newGame(s, names, narr, app.seen);
+}
+
+$('lobbyStartBtn').addEventListener('click', () => {
+  if (!isHost()) return;
+  unlockAudio();
+  app.backend.set(`rooms/${app.code}/game`, buildOnlineGame()).catch(() => toast('Oyun başlatılamadı.'));
+});
+
+/* =========================================================
+   EKRAN ÇİZİMİ
+   ========================================================= */
+function roleOf(G) {
+  if (!app.online) return 'narrator';
+  const t = G.turn;
+  if (!t) return 'none';
+  if (t.nid === app.me) return 'narrator';
+  const mySide = app.room?.players?.[app.me]?.side;
+  if (G.s.mode === 'duo' || mySide === t.side) return 'guesser';
+  return 'watcher';
+}
+
+function render() {
+  document.querySelectorAll('.online-only').forEach((el) => { el.hidden = !app.online; });
+  const G = app.G;
+  if (app.online && !G) { handleFx(null); renderLobby(); showScreen('screen-lobby'); return; }
+  if (!G) return;
+  handleFx(G);
+  const role = roleOf(G);
+  if (G.phase === 'ready' || G.phase === 'review') { renderTransition(G); showScreen('screen-transition'); }
+  else if (G.phase === 'turn') {
+    if (role === 'guesser') { renderGuess(G); showScreen('screen-guess'); }
+    else { renderGame(G, role); showScreen('screen-game'); }
+  } else if (G.phase === 'final') { renderFinal(G); showScreen('screen-final'); }
+  tickTimer();
+}
+
+// Ses, titreşim ve animasyonları durum değişikliklerinden türet
+function handleFx(G) {
+  const phase = G ? G.phase : null;
+  if (app.prevPhase === 'turn' && phase !== 'turn') turnEndFx();
+  app.prevPhase = phase;
+  const t = G?.turn;
+  if (!t) { app.fxTurn = null; return; }
+  if (app.fxTurn !== t.id) {
+    app.fxTurn = t.id; app.fxLen = t.items.length;
+    app.shownCard = -1; app.endingTurn = null; app.lastSecs = null;
+    return;
+  }
+  if (t.items.length > app.fxLen) {
+    app.fxLen = t.items.length;
+    itemFx(t.items[t.items.length - 1], t);
+  }
+}
+
+function itemFx(item, t) {
+  const pts = item.r === 'correct' ? LEVELS[CARDS[item.c].level].pts : item.r === 'taboo' ? -1 : 0;
+  if (item.r === 'correct') { beep(880, 0.1); buzz(25); }
+  if (item.r === 'taboo') { beep(180, 0.22, 'square'); buzz([80, 60, 80]); app.pendingShake = true; }
+  if (item.by) toast(`${item.by} TABU dedi! −1`);
+  if (item.r === 'pass') beep(520, 0.07);
+  ['gTurnScore', 'gsTurnScore'].forEach((id) => { const el = $(id); el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); });
+
+  // Tahmin eden ekranı için kısa geri bildirim
+  const flash = $('gsFlash');
+  const look = {
+    correct: ['bg-emerald-500/20 border-emerald-500/50 text-emerald-300', `Doğru! +${pts}`],
+    taboo: ['bg-red-500/20 border-red-500/50 text-red-300', item.by ? 'Rakip TABU dedi! −1' : 'Tabu! −1'],
+    pass: ['bg-amber-500/15 border-amber-500/40 text-amber-300', 'Pas geçildi'],
+  }[item.r];
+  flash.className = `flex h-24 w-full items-center justify-center rounded-3xl border font-display text-3xl font-extrabold transition ${look[0]}`;
+  flash.textContent = look[1];
+  clearTimeout(itemFx.timer);
+  itemFx.timer = setTimeout(resetFlash, 1600);
+}
+function resetFlash() {
+  const flash = $('gsFlash');
+  flash.className = 'flex h-24 w-full items-center justify-center rounded-3xl border border-zinc-800 bg-zinc-900/60 font-display text-3xl font-extrabold text-zinc-500 transition';
+  flash.textContent = 'Kart anlatılıyor…';
+}
+
+function turnEndFx() {
+  beep(300, 0.5);
+  setTimeout(() => beep(220, 0.6), 180);
+  buzz([200, 100, 300]);
+  releaseAwake();
+  save(KEYS.seen, [...app.seen]);
+  resetFlash();
+}
+
+// Kelime listesi etiketleri
+const RESULT_STYLE = {
+  correct: { cls: 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/30', mark: '✓' },
+  taboo:   { cls: 'bg-red-500/15 text-red-300 ring-red-500/30', mark: '✕' },
+  pass:    { cls: 'bg-amber-500/15 text-amber-300 ring-amber-500/30', mark: '↷' },
+  timeout: { cls: 'bg-zinc-800 text-zinc-400 ring-zinc-700', mark: '⏱' },
+};
+function wordChips(items) {
+  if (!items.length) return '<span class="text-sm text-zinc-500">Bu turda kart açılmadı.</span>';
+  return items.map((it) => {
+    const c = CARDS[it.c];
+    const st = RESULT_STYLE[it.r];
+    const pts = it.r === 'correct' ? ` <span class="opacity-60">+${LEVELS[c.level].pts}</span>` : '';
+    const why = it.by ? ' <span class="opacity-60">· rakip</span>' : it.obj ? ' <span class="opacity-60">· itiraz</span>' : '';
+    return `<span class="rounded-lg px-2 py-1 text-xs font-semibold ring-1 ${st.cls}">${st.mark} ${escapeHTML(c.word)}${pts}${why}</span>`;
+  }).join('');
+}
+
+function renderTransition(G) {
+  const s = G.side;
+  const n = narratorOf(G);
+  $('roundLabel').textContent = `Tur ${G.round} / ${G.s.rounds}`;
+  $('turnName').textContent = G.names[s];
+  $('turnName').className = 'font-display text-5xl font-extrabold ' + (s === 0 ? 'text-red-400' : 'text-indigo-400');
+  $('turnSub').textContent = G.s.mode === 'team'
+    ? (n.name !== G.names[s] ? `Anlatıcı: ${n.name} · Takım arkadaşları tahmin ediyor` : 'Bir kişi anlatsın, takım arkadaşları tahmin etsin')
+    : `${G.names[s]} anlatıyor, ${G.names[1 - s]} tahmin ediyor`;
+  [0, 1].forEach((i) => { $('tScoreName' + i).textContent = G.names[i]; $('tScore' + i).textContent = G.scores[i]; });
+  $('deckInfo').textContent = settingsSummary(G.s);
+
+  const last = G.turns[G.turns.length - 1];
+  $('lastTurnBox').hidden = !last;
+  if (last) {
+    $('lastTurnName').textContent = last.narrator;
+    $('lastTurnPoints').textContent = last.points > 0 ? `+${last.points}` : last.points;
+    $('lastCorrect').textContent = last.correct;
+    $('lastTaboo').textContent = last.taboo;
+    $('lastPass').textContent = last.pass;
+    $('lastTurnWords').innerHTML = wordChips(last.items);
+  }
+
+  // Düello itirazı: sadece son turda tahmin eden oyuncu görür
+  const objector = canObject(G);
+  $('objectBox').hidden = !objector;
+  if (objector) renderObjections(last);
+
+  const review = G.phase === 'review';
+  $('nextBlock').hidden = review;
+  $('finishBtn').hidden = true;
+  if (review) {
+    const oid = objectorId(G);
+    const canFinish = !app.online || objector || app.room?.players?.[oid]?.on === false;
+    $('roundLabel').textContent = 'Son tur bitti';
+    $('readyBtn').hidden = true;
+    $('skipBtn').hidden = true;
+    $('finishBtn').hidden = !canFinish;
+    $('transHint').textContent = objector ? 'Kartları kontrol ettiysen sonuçlara geç.'
+      : canFinish ? `${G.names[1 - last.side]} bağlı değil, sonuçlara geçebilirsin.`
+      : `${G.names[1 - last.side]} kartları kontrol ediyor…`;
+    return;
+  }
+
+  const mine = !app.online || n.id === app.me;
+  $('readyBtn').hidden = !mine;
+  const narratorAway = app.online && app.room?.players?.[n.id]?.on === false;
+  $('skipBtn').hidden = !(app.online && !mine && narratorAway && isHost());
+  $('skipBtn').textContent = `${n.name} bağlı değil, turu atla`;
+  if (!app.online) $('transHint').textContent = 'Telefonu anlatıcıya ver. Tahmin eden ekranı görmemeli!';
+  else if (mine) $('transHint').textContent = 'Kartları sadece sen göreceksin. Hazır olunca başlat.';
+  else if (narratorAway) $('transHint').textContent = `${n.name} şu an bağlı değil. Dönmesini bekleyin.`;
+  else $('transHint').textContent = `${n.name} başlatınca tur başlayacak.`;
+}
+
+// Düelloda son turu tahmin eden oyuncu
+function objectorId(G) {
+  const last = G.turns[G.turns.length - 1];
+  return last ? G.narr[1 - last.side]?.[0]?.id : null;
+}
+function canObject(G) {
+  const last = G.turns[G.turns.length - 1];
+  if (G.s.mode !== 'duo' || !last || (G.phase !== 'ready' && G.phase !== 'review')) return false;
+  if (!last.items.some((it) => it.r === 'correct' || it.obj)) return false;
+  return !app.online || objectorId(G) === app.me;
+}
+
+function renderObjections(last) {
+  $('objectList').innerHTML = last.items.map((it, i) => {
+    if (it.r !== 'correct' && !it.obj) return '';
+    const c = CARDS[it.c];
+    const on = !!it.obj;
+    return `<button data-i="${i}" class="w-full rounded-xl border px-3 py-2 text-left transition active:scale-[.98] ${on ? 'border-red-500/50 bg-red-500/15' : 'border-zinc-700 bg-zinc-900 hover:border-zinc-500'}">
+      <span class="flex items-center justify-between gap-2">
+        <b class="truncate ${on ? 'text-red-300 line-through' : ''}">${escapeHTML(c.word)}</b>
+        <span class="shrink-0 text-xs font-semibold ${on ? 'text-red-300' : 'text-emerald-300'}">${on ? 'Tabu sayıldı · −1' : `Doğru · +${LEVELS[c.level].pts}`}</span>
+      </span>
+      <span class="mt-1 block text-xs text-zinc-500">Yasaklı: ${c.taboo.map(escapeHTML).join(', ')}</span>
+    </button>`;
+  }).join('');
+}
+
+function renderGame(G, role) {
+  const t = G.turn;
+  const isN = role === 'narrator';
+  $('gRound').textContent = `Tur ${t.round}/${G.s.rounds} · ${G.names[t.side]}`;
+  $('gNarrator').textContent = `Anlatan: ${t.narrator}`;
+  [0, 1].forEach((i) => {
+    $('gName' + i).textContent = G.names[i];
+    $('gScore' + i).textContent = G.scores[i];
+    $('gSide' + i).classList.toggle('border-red-500/60', i === 0 && t.side === 0);
+    $('gSide' + i).classList.toggle('border-indigo-500/60', i === 1 && t.side === 1);
+  });
+  $('gTurnScore').textContent = t.points;
+  $('passCount').textContent = t.passes;
+  $('passBtn').disabled = t.passes <= 0;
+  $('controls').hidden = !isN;
+  $('swipeHint').hidden = !cfg.swipe;
+  $('watchBanner').hidden = role !== 'watcher';
+  updateCallTaboo(G, role);
+
+  if (t.card >= 0 && t.card !== app.shownCard) {
+    showCard(CARDS[t.card]);
+    app.shownCard = t.card;
+    if (isN) app.seen.add(t.card);
+  }
+
+  const paused = t.paused != null;
+  $('pauseOverlay').hidden = !paused;
+  $('pauseTitle').textContent = isN ? 'Duraklatıldı' : 'Anlatıcı duraklattı';
+  $('pauseActions').hidden = !isN;
+  if (!paused) resetQuitConfirm();
+  keepAwake();
+}
+
+function renderGuess(G) {
+  const t = G.turn;
+  $('gsRound').textContent = `Tur ${t.round}/${G.s.rounds} · ${G.names[t.side]}`;
+  $('gsNarrator').textContent = t.narrator;
+  $('gsTurnScore').textContent = t.points;
+  [0, 1].forEach((i) => { $('gsName' + i).textContent = G.names[i]; $('gsScore' + i).textContent = G.scores[i]; });
+  $('gsPaused').hidden = t.paused == null;
+  keepAwake();
+}
+
+// Kartı ekrana bas
+function showCard(c) {
+  const lv = LEVELS[c.level];
+  $('mainWord').textContent = c.word.toLocaleUpperCase('tr');
+  $('cardCat').textContent = CAT_NAME[c.cat];
+  $('cardLevel').textContent = `${lv.name} · +${lv.pts}`;
+  $('cardLevel').className = `absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-bold ${lv.badge}`;
+  $('correctPts').textContent = `+${lv.pts}`;
+  $('tabooList').innerHTML = c.taboo
+    .map((w) => `<li class="rounded-xl border border-red-500/25 bg-red-500/10 py-2.5 text-center text-lg font-semibold text-red-300">${escapeHTML(w)}</li>`)
+    .join('');
+  const card = $('card');
+  card.style.transition = ''; card.style.transform = ''; card.style.opacity = '';
+  setStamps(null, 0);
+  card.classList.remove('card-in', 'shake');
+  void card.offsetWidth;
+  card.classList.add(app.pendingShake ? 'shake' : 'card-in');
+  app.pendingShake = false;
+}
+
+/* ---------- Sayaç: her 200 ms'de kontrol ---------- */
+function updateTimerUI(secs, duration, instant) {
+  const ratio = Math.max(0, secs / duration);
+  const ring = $('timerRing');
+  if (instant) ring.style.transition = 'none';
+  ring.style.strokeDashoffset = RING_LENGTH * (1 - ratio);
+  const color = ratio > 0.5 ? '#22c55e' : ratio > 0.2 ? '#f59e0b' : '#ef4444';
+  ring.style.stroke = color;
+  if (instant) { ring.getBoundingClientRect(); ring.style.transition = ''; }
+  $('timerText').textContent = secs;
+  $('timerText').classList.toggle('timer-warning', secs <= 10);
+  $('timerText').classList.toggle('text-red-400', secs <= 10);
+
+  const bar = $('gsBar');
+  if (instant) bar.style.transition = 'none';
+  bar.style.width = `${ratio * 100}%`;
+  bar.style.backgroundColor = color;
+  if (instant) { bar.getBoundingClientRect(); bar.style.transition = ''; }
+  $('gsTimer').textContent = secs;
+  $('gsTimer').classList.toggle('text-red-400', secs <= 10);
+}
+
+function tickTimer() {
+  const G = app.G;
+  if (!G || G.phase !== 'turn' || !G.turn) return;
+  const t = G.turn;
+  const ms = timeLeftMs(G, now());
+  const secs = Math.ceil(ms / 1000);
+  if (secs !== app.lastSecs) {
+    const first = app.lastSecs == null;
+    app.lastSecs = secs;
+    updateTimerUI(secs, G.s.duration, first);
+    if (!first && secs <= 5 && secs > 0 && t.paused == null) beep(660, 0.08);
+    if (currentScreen === 'screen-game') updateCallTaboo(G, roleOf(G));
+  }
+  // Süre bitti: anlatıcı (ya da 2,5 sn gecikmeyle herhangi biri) turu kapatır
+  if (ms <= 0 && t.paused == null && app.endingTurn !== t.id) {
+    const late = now() > t.endsAt + 2500;
+    if (!app.online || t.nid === app.me || late) {
+      app.endingTurn = t.id;
+      const tid = t.id;
+      dispatch((G2, n) => !!G2.turn && G2.turn.id === tid && G2.turn.paused == null && timeLeftMs(G2, n) <= 0 && endTurn(G2));
+    }
+  }
+}
+setInterval(tickTimer, 200);
+
+/* =========================================================
+   OYUNCU İŞLEMLERİ
+   ========================================================= */
+const isNarratorNow = () => app.G && app.G.phase === 'turn' && roleOf(app.G) === 'narrator';
+const canAct = () => isNarratorNow() && app.G.turn.paused == null && !app.busy && timeLeftMs(app.G, now()) > 0;
+
+function doAct(result) {
+  if (!canAct()) return;
+  if (result === 'pass' && app.G.turn.passes <= 0) return;
+  const cid = app.G.turn.card;
+  dispatch((G, n) => act(G, result, n, cid));
+}
+$('correctBtn').addEventListener('click', () => doAct('correct'));
+$('tabooBtn').addEventListener('click', () => doAct('taboo'));
+$('passBtn').addEventListener('click', () => doAct('pass'));
+
+// Takım modu: izleyen rakibin TABU! zili
+function updateCallTaboo(G, role) {
+  const btn = $('callTabooBtn');
+  const t = G.turn;
+  btn.hidden = role !== 'watcher' || G.s.mode !== 'team';
+  if (btn.hidden) return;
+  const called = app.calledCard === `${t.id}|${t.card}`;
+  btn.disabled = t.paused != null || called || timeLeftMs(G, now()) <= 0;
+  $('callTabooSub').textContent = called ? 'Gönderildi…' : 'Anlatıcı yasaklı kelime söyledi · −1';
+}
+$('callTabooBtn').addEventListener('click', () => {
+  const G = app.G;
+  if (!G || G.phase !== 'turn' || roleOf(G) !== 'watcher') return;
+  const t = G.turn;
+  if (t.paused != null || timeLeftMs(G, now()) <= 0) return;
+  const key = `${t.id}|${t.card}`;
+  if (app.calledCard === key) return;
+  app.calledCard = key;
+  const cid = t.card;
+  const by = app.room?.players?.[app.me]?.name || 'Rakip';
+  dispatch((G2, n) => callTaboo(G2, cid, by, n));
+  updateCallTaboo(G, 'watcher');
+});
+
+// Düello itirazı ve son turdan sonuçlara geçiş
+$('objectList').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-i]');
+  if (!b || !app.G || !canObject(app.G)) return;
+  const i = Number(b.dataset.i);
+  const tid = app.G.turns[app.G.turns.length - 1].id;
+  dispatch((G) => toggleObjection(G, tid, i));
+});
+$('finishBtn').addEventListener('click', () => dispatch((G) => finishGame(G)));
+
+$('readyBtn').addEventListener('click', () => {
+  unlockAudio();
+  dispatch((G, n) => G.phase === 'ready' && (!app.online || narratorOf(G).id === app.me) && startTurn(G, n));
+});
+$('skipBtn').addEventListener('click', () => dispatch((G, n) => skipTurn(G, n)));
+
+// Duraklat / devam
+$('pauseBtn').addEventListener('click', () => {
+  if (!isNarratorNow()) return;
+  const on = app.G.turn.paused == null;
+  dispatch((G, n) => setPause(G, on, n));
+});
+$('resumeBtn').addEventListener('click', () => { if (isNarratorNow()) dispatch((G, n) => setPause(G, false, n)); });
+
+// Oyundan çıkış (sayfa içi onay)
+function resetQuitConfirm() {
+  $('quitWrap').innerHTML = `<button id="quitBtn" class="text-sm text-zinc-500 underline">${app.online ? 'Odadan çık' : 'Oyunu bitir ve ana menüye dön'}</button>`;
+  $('quitBtn').addEventListener('click', () => {
+    $('quitWrap').innerHTML = `<p class="text-sm text-zinc-400">${app.online ? 'Odadan çıkılsın mı?' : 'Bu oyun kaydedilmeyecek. Emin misin?'}</p>
+      <div class="flex gap-2"><button id="quitYes" class="rounded-lg bg-red-500 px-4 py-2 text-sm font-bold text-white">Evet, çık</button>
+      <button id="quitNo" class="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-semibold">Vazgeç</button></div>`;
+    $('quitYes').addEventListener('click', () => {
+      if (app.online) { leaveRoom(); return; }
+      app.G = null; app.prevPhase = null; app.fxTurn = null; releaseAwake(); showScreen('screen-setup');
+    });
+    $('quitNo').addEventListener('click', resetQuitConfirm);
+  });
+}
+
+// Klavye kısayolları
+document.addEventListener('keydown', (e) => {
+  if (currentScreen !== 'screen-game' || !isNarratorNow()) return;
+  if (e.target.tagName === 'INPUT') return;
+  const k = e.key.toLocaleLowerCase('tr');
+  if (k === 'd') doAct('correct');
+  else if (k === 't') doAct('taboo');
+  else if (k === 'p') doAct('pass');
+  else if (e.code === 'Space') { e.preventDefault(); $('pauseBtn').click(); }
+});
+
+/* ---------- Kaydırma: sağa Doğru · sola Tabu · yukarı Pas ---------- */
+const SWIPE_THRESHOLD = 95;
+let drag = null;
+function setStamps(dir, amount) {
+  $('stampCorrect').style.opacity = dir === 'correct' ? amount : 0;
+  $('stampTaboo').style.opacity = dir === 'taboo' ? amount : 0;
+  $('stampPass').style.opacity = dir === 'pass' ? amount : 0;
+}
+function swipeDir(dx, dy) {
+  if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? 'correct' : 'taboo';
+  if (dy < 0 && app.G?.turn?.passes > 0) return 'pass';
+  return null;
+}
+const cardEl = $('card');
+cardEl.addEventListener('pointerdown', (e) => {
+  if (!cfg.swipe || !canAct() || e.button > 0) return;
+  drag = { x: e.clientX, y: e.clientY, id: e.pointerId };
+  cardEl.setPointerCapture(e.pointerId);
+  cardEl.classList.remove('card-in', 'shake');
+  cardEl.style.transition = 'none';
+});
+cardEl.addEventListener('pointermove', (e) => {
+  if (!drag || e.pointerId !== drag.id) return;
+  const dx = e.clientX - drag.x;
+  const dy = Math.min(0, e.clientY - drag.y);
+  cardEl.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx / 18}deg)`;
+  const dir = swipeDir(dx, dy);
+  setStamps(dir, Math.min(1, (dir === 'pass' ? -dy : Math.abs(dx)) / SWIPE_THRESHOLD));
+});
+function endDrag(e) {
+  if (!drag || e.pointerId !== drag.id) return;
+  const dx = e.clientX - drag.x;
+  const dy = Math.min(0, e.clientY - drag.y);
+  drag = null;
+  const dir = swipeDir(dx, dy);
+  const dist = dir === 'pass' ? -dy : Math.abs(dx);
+  if (dir && dist >= SWIPE_THRESHOLD && canAct()) {
+    app.busy = true;
+    const w = window.innerWidth;
+    cardEl.style.transition = 'transform .2s ease-in, opacity .2s ease-in';
+    cardEl.style.transform = dir === 'correct' ? `translate(${w}px, ${dy}px) rotate(25deg)`
+      : dir === 'taboo' ? `translate(${-w}px, ${dy}px) rotate(-25deg)` : `translate(${dx}px, ${-window.innerHeight}px)`;
+    cardEl.style.opacity = '0';
+    const before = app.shownCard;
+    setTimeout(() => {
+      app.busy = false;
+      doAct(dir);
+      // İşlem reddedildiyse kartı geri getir
+      setTimeout(() => { if (app.shownCard === before) { cardEl.style.transition = ''; cardEl.style.transform = ''; cardEl.style.opacity = ''; setStamps(null, 0); } }, 700);
+    }, 190);
+  } else {
+    cardEl.style.transition = 'transform .25s cubic-bezier(.2,.9,.3,1.3)';
+    cardEl.style.transform = '';
+    setStamps(null, 0);
+  }
+}
+cardEl.addEventListener('pointerup', endDrag);
+cardEl.addEventListener('pointercancel', endDrag);
+
+/* =========================================================
+   FİNAL
+   ========================================================= */
+let finalRendered = null;
+function renderFinal(G) {
+  const host = !app.online || isHost();
+  $('rematchBtn').hidden = !host;
+  $('menuBtn').hidden = !host;
+  $('menuBtn').textContent = app.online ? 'Lobiye dön' : 'Ana Menü';
+  $('finalWait').hidden = host;
+  if (finalRendered === G.gid) return;
+  finalRendered = G.gid;
+
+  const [a, b] = G.scores;
+  const winner = a === b ? -1 : a > b ? 0 : 1;
+  if (winner === -1) {
+    $('finalEmoji').textContent = '🤝';
+    $('winnerText').textContent = 'Berabere!';
+    $('winnerSub').textContent = `İki taraf da ${a} puanda kaldı. Rövanş şart!`;
+  } else {
+    $('finalEmoji').textContent = '🏆';
+    $('winnerText').innerHTML = `<span class="${winner === 0 ? 'text-red-400' : 'text-indigo-400'}">${escapeHTML(G.names[winner])}</span> kazandı!`;
+    $('winnerSub').textContent = `${Math.abs(a - b)} puan farkla şampiyon. Tebrikler!`;
+  }
+  [0, 1].forEach((i) => { $('fHead' + i).textContent = G.names[i]; $('fTotal' + i).textContent = G.scores[i]; });
+  $('finalRows').innerHTML = G.roundScores.map((r, i) => `
+    <tr class="border-t border-zinc-800/60">
+      <td class="px-3 py-2 text-left text-zinc-400">${i + 1}. tur</td>
+      <td class="px-3 py-2 text-right">${r[0]}</td>
+      <td class="px-3 py-2 text-right">${r[1]}</td>
+    </tr>`).join('');
+  $('finalWordList').innerHTML = G.turns.map((t, i) => `
+    <details class="rounded-2xl border border-zinc-800 bg-zinc-900/60" ${i === G.turns.length - 1 ? 'open' : ''}>
+      <summary class="flex items-center justify-between gap-3 px-4 py-3">
+        <span class="min-w-0 truncate text-sm"><span class="text-zinc-500">${t.round}. tur ·</span>
+          <b class="${t.side === 0 ? 'text-red-300' : 'text-indigo-300'}">${escapeHTML(t.narrator)}</b></span>
+        <span class="flex shrink-0 items-center gap-2 text-sm">
+          <span class="tabnum font-bold">${t.points > 0 ? '+' : ''}${t.points}</span>
+          <svg class="chev transition" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </span>
+      </summary>
+      <div class="flex flex-wrap gap-1.5 px-4 pb-4">${wordChips(t.items)}</div>
+    </details>`).join('');
+
+  saveGameToHistory(G, winner);
+  if (winner !== -1) launchConfetti();
+}
+
+$('rematchBtn').addEventListener('click', () => {
+  unlockAudio();
+  if (!app.online) {
+    const G = app.G;
+    app.G = newGame(G.s, G.names, G.narr, app.seen);
+    render();
+  } else if (isHost()) {
+    app.backend.set(`rooms/${app.code}/game`, buildOnlineGame()).catch(() => toast('Rövanş başlatılamadı.'));
+  }
+});
+$('menuBtn').addEventListener('click', () => {
+  if (!app.online) { app.G = null; app.prevPhase = null; showScreen('screen-setup'); return; }
+  if (isHost()) app.backend.remove(`rooms/${app.code}/game`).catch(() => toast('Lobiye dönülemedi.'));
+});
+$('finalStatsBtn').addEventListener('click', () => openStats(currentScreen));
+
+/* =========================================================
+   GEÇMİŞ VE İSTATİSTİKLER
+   Bu cihaz: localStorage. Online oyunlar ayrıca Firebase'de
+   "logs/<oyun kimliği>" altına kaydedilir (herkes görür).
+   ========================================================= */
+const LOG_PATH = 'logs';
+const LOG_LIMIT = 200;
+
+function gameRecord(G, winner) {
+  const words = (t, r) => t.items.filter((x) => x.r === r).map((x) => CARDS[x.c].word);
+  return {
+    id: G.gid, date: Date.now(), mode: G.s.mode, online: app.online,
+    names: G.names, scores: G.scores, winner, rounds: G.s.rounds, duration: G.s.duration,
+    diff: G.s.diff, cats: G.s.cats,
+    turns: G.turns.map((t) => ({
+      side: t.side, narrator: t.narrator, correct: t.correct, taboo: t.taboo, pass: t.pass, points: t.points,
+      tabooWords: words(t, 'taboo'), passWords: words(t, 'pass'),
+    })),
+  };
+}
+
+function saveGameToHistory(G, winner) {
+  const history = load(KEYS.history, []);
+  if (app.saved.has(G.gid) || history.some((h) => h.id === G.gid)) return;
+  app.saved.add(G.gid);
+  const record = gameRecord(G, winner);
+  history.unshift(record);
+  save(KEYS.history, history.slice(0, 100));
+
+  // Online oyunu oda sahibi Firebase'e yazar (aynı kimlikle yazıldığı için tekrar yazılsa da tek kayıt kalır)
+  if (app.online && isHost() && app.backend) {
+    app.backend.set(`${LOG_PATH}/${G.gid}`, { ...record, room: app.code })
+      .catch(() => toast('Oyun kaydı Firebase\'e yazılamadı.'));
+  }
+}
+
+// Firebase boş dizileri sildiği için okunan kayıtları onar
+function normalizeLog(g) {
+  // Online kayıtları herkes yazabildiği için sayılar sayıya, metinler metne çevrilir
+  const str = (v) => String(v ?? '');
+  return {
+    ...g,
+    date: num(g.date), rounds: num(g.rounds), duration: num(g.duration), winner: num(g.winner),
+    names: toArr(g.names).map(str), scores: toArr(g.scores).map(num), cats: toArr(g.cats),
+    turns: toArr(g.turns).map((t) => ({
+      ...t, side: num(t.side), narrator: str(t.narrator),
+      correct: num(t.correct), taboo: num(t.taboo), pass: num(t.pass), points: num(t.points),
+      tabooWords: toArr(t.tabooWords).map(str), passWords: toArr(t.passWords).map(str),
+    })),
+  };
+}
+
+let statsSource = 'local';
+let statsReq = 0;
+
+function openStats(from) {
+  app.statsReturn = from;
+  loadStats();
+  showScreen('screen-stats');
+}
+$('openStatsBtn').addEventListener('click', () => openStats('screen-setup'));
+$('statsBackBtn').addEventListener('click', () => { showScreen(app.statsReturn); render(); });
+$('statsSource').querySelectorAll('[data-src]').forEach((b) => b.addEventListener('click', () => {
+  statsSource = b.dataset.src;
+  loadStats();
+}));
+
+async function loadStats() {
+  const online = statsSource === 'online';
+  const req = ++statsReq;
+  $('statsSource').hidden = !ONLINE_AVAILABLE;
+  $('statsSource').querySelectorAll('[data-src]').forEach((b) => b.classList.toggle('selected', b.dataset.src === statsSource));
+  $('statsSub').textContent = online ? 'Online oynanan tüm oyunlar' : 'Bu cihazda oynanan oyunlar';
+  $('clearWrap').hidden = online;
+  if (!online) { renderStats(load(KEYS.history, [])); return; }
+
+  $('statsLoading').hidden = false;
+  $('statsEmpty').hidden = true;
+  $('statsBody').hidden = true;
+  try {
+    const be = await getBackend();
+    const raw = (await be.recent(LOG_PATH, LOG_LIMIT)) || {};
+    if (req !== statsReq) return;
+    renderStats(Object.values(raw).map(normalizeLog).sort((a, b) => b.date - a.date));
+  } catch (e) {
+    if (req !== statsReq) return;
+    $('statsEmpty').textContent = 'Online kayıtlar alınamadı. İnternet bağlantını ve Firebase kurallarını kontrol et.';
+    $('statsEmpty').hidden = false;
+  } finally {
+    if (req === statsReq) $('statsLoading').hidden = true;
+  }
+}
+
+const fmtDate = (ts) => new Date(ts).toLocaleString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const pct = (x) => `%${Math.round(x * 100)}`;
+
+function renderStats(history) {
+  $('statsEmpty').textContent = statsSource === 'online'
+    ? 'Henüz kaydedilmiş online oyun yok. Online bir oyun bittiğinde sonucu burada herkes görür.'
+    : 'Henüz tamamlanmış oyun yok. İlk oyunu bitirdiğinde skorlar, rekorlar ve oyuncu sıralaması burada görünecek.';
+  $('statsEmpty').hidden = history.length > 0;
+  $('statsBody').hidden = history.length === 0;
+  if (!history.length) return;
+
+  const players = new Map();
+  const P = (name) => {
+    const key = name.toLocaleLowerCase('tr');
+    if (!players.has(key)) players.set(key, { name, games: new Set(), wins: 0, turns: 0, correct: 0, taboo: 0, pass: 0, points: 0, seconds: 0 });
+    return players.get(key);
+  };
+  let totalCorrect = 0, totalTaboo = 0, totalPass = 0, totalSeconds = 0;
+  let bestTurn = null, bestGame = null, biggestWin = null;
+  const tabooCount = {}, passCount = {};
+
+  history.forEach((g) => {
+    g.names.forEach((n, i) => { const p = P(n); p.games.add(g.id); if (g.winner === i) p.wins++; });
+    g.scores.forEach((s, i) => { if (!bestGame || s > bestGame.score) bestGame = { name: g.names[i], score: s }; });
+    if (g.winner !== -1) {
+      const diff = Math.abs(g.scores[0] - g.scores[1]);
+      if (!biggestWin || diff > biggestWin.diff) biggestWin = { name: g.names[g.winner], diff };
+    }
+    g.turns.forEach((t) => {
+      const p = P(t.narrator);
+      p.games.add(g.id); p.turns++; p.correct += t.correct; p.taboo += t.taboo; p.pass += t.pass;
+      p.points += t.points; p.seconds += g.duration;
+      totalCorrect += t.correct; totalTaboo += t.taboo; totalPass += t.pass; totalSeconds += g.duration;
+      if (!bestTurn || t.points > bestTurn.points) bestTurn = { name: t.narrator, points: t.points };
+      (t.tabooWords || []).forEach((w) => { tabooCount[w] = (tabooCount[w] || 0) + 1; });
+      (t.passWords || []).forEach((w) => { passCount[w] = (passCount[w] || 0) + 1; });
+    });
+  });
+
+  const list = [...players.values()];
+  const perMin = (p) => (p.seconds ? p.correct / (p.seconds / 60) : 0);
+  const fastest = list.filter((p) => p.turns >= 2).sort((a, b) => perMin(b) - perMin(a))[0];
+  const topEntry = (obj) => Object.entries(obj).sort((a, b) => b[1] - a[1])[0];
+  const worstTaboo = topEntry(tabooCount);
+  const mostPassed = topEntry(passCount);
+  const played = totalCorrect + totalTaboo + totalPass;
+
+  $('statTiles').innerHTML = [
+    ['Oynanan oyun', history.length],
+    ['Anlatılan kart', played],
+    ['Doğru oranı', played ? pct(totalCorrect / played) : '—'],
+    ['Oyun süresi', `${Math.round(totalSeconds / 60)} dk`],
+  ].map(([label, val]) => `
+    <div class="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
+      <p class="text-xs text-zinc-500">${label}</p>
+      <p class="tabnum mt-1 font-display text-3xl font-extrabold">${val}</p>
+    </div>`).join('');
+
+  $('recordList').innerHTML = [
+    bestTurn && ['En yüksek tur puanı', bestTurn.name, `${bestTurn.points} puan`],
+    bestGame && ['En yüksek oyun skoru', bestGame.name, `${bestGame.score} puan`],
+    biggestWin && ['En farklı galibiyet', biggestWin.name, `${biggestWin.diff} fark`],
+    fastest && ['En hızlı anlatıcı', fastest.name, `${perMin(fastest).toFixed(1)} doğru/dk`],
+    worstTaboo && ['En çok tabu yapılan kelime', worstTaboo[0], `${worstTaboo[1]} kez`],
+    mostPassed && ['En çok pas geçilen kelime', mostPassed[0], `${mostPassed[1]} kez`],
+  ].filter(Boolean).map(([label, who, val]) => `
+    <div class="flex items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3">
+      <div class="min-w-0"><p class="text-xs text-zinc-500">${label}</p><p class="truncate font-semibold">${escapeHTML(who)}</p></div>
+      <span class="tabnum shrink-0 rounded-lg bg-zinc-800 px-2.5 py-1 text-sm font-bold">${val}</span>
+    </div>`).join('');
+
+  list.sort((a, b) => b.wins - a.wins || perMin(b) - perMin(a));
+  $('playerRows').innerHTML = list.map((p, i) => `
+    <tr class="border-t border-zinc-800/60">
+      <td class="px-3 py-2.5 text-left"><span class="mr-1.5 text-zinc-500">${i + 1}.</span><b>${escapeHTML(p.name)}</b></td>
+      <td class="px-2 py-2.5 text-right">${p.games.size}</td>
+      <td class="px-2 py-2.5 text-right">${p.wins}</td>
+      <td class="px-2 py-2.5 text-right text-emerald-400">${p.correct}</td>
+      <td class="px-2 py-2.5 text-right text-red-400">${p.taboo}</td>
+      <td class="px-3 py-2.5 text-right">${p.turns ? perMin(p).toFixed(1) : '—'}</td>
+    </tr>`).join('');
+
+  $('historyList').innerHTML = history.slice(0, 30).map((g) => {
+    const cls = (i) => (g.winner === i ? 'font-bold text-zinc-100' : 'text-zinc-400');
+    return `
+    <div class="flex items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3">
+      <div class="min-w-0">
+        <p class="truncate text-sm"><span class="${cls(0)}">${escapeHTML(g.names[0])}</span>
+          <span class="tabnum mx-1 font-display font-bold">${g.scores[0]} – ${g.scores[1]}</span>
+          <span class="${cls(1)}">${escapeHTML(g.names[1])}</span></p>
+        <p class="text-xs text-zinc-500">${fmtDate(g.date)} · ${g.mode === 'team' ? 'Takım' : 'Düello'}${g.online ? ' · Online' : ''} · ${g.rounds} tur · ${g.duration} sn</p>
+      </div>
+      <span class="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold ${g.winner === -1 ? 'bg-zinc-800 text-zinc-300' : 'bg-red-500/15 text-red-300'}">
+        ${g.winner === -1 ? 'Berabere' : escapeHTML(g.names[g.winner])}</span>
+    </div>`;
+  }).join('');
+
+  resetClearConfirm();
+}
+
+function resetClearConfirm() {
+  $('clearWrap').innerHTML = '<button id="clearBtn" class="text-sm text-zinc-500 underline">Geçmişi sil</button>';
+  $('clearBtn').addEventListener('click', () => {
+    $('clearWrap').innerHTML = `<p class="text-sm text-zinc-400">Tüm oyun geçmişi ve istatistikler silinecek.</p>
+      <div class="flex gap-2"><button id="clearYes" class="rounded-lg bg-red-500 px-4 py-2 text-sm font-bold text-white">Sil</button>
+      <button id="clearNo" class="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-semibold">Vazgeç</button></div>`;
+    $('clearYes').addEventListener('click', () => { save(KEYS.history, []); loadStats(); });
+    $('clearNo').addEventListener('click', resetClearConfirm);
+  });
+}
+
+/* =========================================================
+   SES, TİTREŞİM, EKRAN AÇIK TUTMA
+   ========================================================= */
+let audioCtx = null;
+function unlockAudio() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch (e) { /* ses desteklenmiyor */ }
+}
+document.addEventListener('pointerdown', unlockAudio, { once: true });
+function beep(freq, duration, type = 'sine') {
+  if (!cfg.sound || !audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch (e) { /* sessizce devam et */ }
+}
+function buzz(pattern) {
+  if (!cfg.vibe) return;
+  try { navigator.vibrate && navigator.vibrate(pattern); } catch (e) { /* desteklenmiyor */ }
+}
+let wakeLock = null;
+async function keepAwake() {
+  if (wakeLock) return;
+  try { wakeLock = await navigator.wakeLock?.request('screen'); } catch (e) { wakeLock = null; }
+}
+function releaseAwake() {
+  try { wakeLock?.release(); } catch (e) { /* yok say */ }
+  wakeLock = null;
+}
+
+/* =========================================================
+   KONFETİ
+   ========================================================= */
+function launchConfetti() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const canvas = $('confetti');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const colors = ['#ef4444', '#6366f1', '#22c55e', '#f59e0b', '#fafafa', '#ec4899'];
+  const pieces = Array.from({ length: 160 }, () => ({
+    x: Math.random() * canvas.width, y: -20 - Math.random() * canvas.height * 0.5,
+    w: 6 + Math.random() * 6, h: 8 + Math.random() * 8,
+    vy: 2 + Math.random() * 3, vx: -1.5 + Math.random() * 3,
+    rot: Math.random() * Math.PI, vr: -0.2 + Math.random() * 0.4,
+    color: colors[Math.floor(Math.random() * colors.length)],
+  }));
+  const start = performance.now();
+  (function frame(t) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach((p) => {
+      p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.fillStyle = p.color; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    });
+    if (t - start < 4000) requestAnimationFrame(frame);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  })(start);
+}
+
+/* =========================================================
+   BAŞLANGIÇ
+   ========================================================= */
+renderCatChips();
+restoreSettings();
+['name0', 'name1', 'members0', 'members1', 'onlineName'].forEach((id) => $(id).addEventListener('change', persistSettings));
+
+// Davet linkiyle gelindiyse (?oda=KOD) online paneli aç
+const inviteCode = new URLSearchParams(location.search).get('oda');
+if (inviteCode) { cfg.place = 'online'; $('joinCode').value = inviteCode.toUpperCase().slice(0, 5); }
+syncSetupUI();
+resetQuitConfirm();
+
+// Sayfa yenilendiyse aynı odaya otomatik dön
+const session = load(KEYS.session, null);
+if (ONLINE_AVAILABLE && session?.code && (!inviteCode || inviteCode.toUpperCase() === session.code)) {
+  joinRoom(session.code, session.name, true);
+} else if (inviteCode) {
+  setTimeout(() => $('onlineName').focus(), 300);
+}
+    </script>
+</body>
+
+</html>
